@@ -73,12 +73,18 @@ export const AddPaymentDrawer: React.FC<AddPaymentDrawerProps> = ({
 
   const loadPreviousUsers = async () => {
     try {
+      console.log("Loading previous users...");
       setLoadingUsers(true);
       const response = await apiService.getPreviousUsers();
+      console.log("Previous users response:", response);
       if (response.success && response.data?.previousUsers) {
+        console.log("Setting previous users:", response.data.previousUsers);
         setPreviousUsers(response.data.previousUsers);
+      } else {
+        console.log("No previous users found or error:", response);
       }
     } catch (error) {
+      console.error("Error loading previous users:", error);
     } finally {
       setLoadingUsers(false);
     }

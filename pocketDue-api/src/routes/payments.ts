@@ -77,6 +77,7 @@ router.get(
 // Get previous users for dropdown
 router.get(
   "/previous-users",
+  authenticateToken as unknown as RequestHandler,
   handleAsync(async (req: Request, res: Response) => {
     const userId = (req as unknown as { user: { _id: string } }).user._id;
     const previousUsers = await paymentService.getPreviousUsers(userId);

@@ -27,15 +27,13 @@ class ApiService {
   private async setToken(token: string): Promise<void> {
     try {
       await AsyncStorage.setItem("authToken", token);
-    } catch (error) {
-    }
+    } catch (error) {}
   }
 
   private async removeToken(): Promise<void> {
     try {
       await AsyncStorage.removeItem("authToken");
-    } catch (error) {
-    }
+    } catch (error) {}
   }
 
   private async makeRequest<T>(
@@ -177,7 +175,12 @@ class ApiService {
   }
 
   async getPreviousUsers(): Promise<ApiResponse<{ previousUsers: string[] }>> {
-    return this.makeRequest("/payments/previous-users");
+    console.log("Making getPreviousUsers API call...");
+    const response = await this.makeRequest<{ previousUsers: string[] }>(
+      "/payments/previous-users"
+    );
+    console.log("getPreviousUsers response:", response);
+    return response;
   }
 }
 
