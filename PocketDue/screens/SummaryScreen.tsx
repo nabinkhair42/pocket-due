@@ -52,7 +52,7 @@ const SummaryDetailModal: React.FC<SummaryDetailModalProps> = ({
   };
 
   const formatAmount = (amount: number) => {
-    return `₨${amount.toLocaleString()}`;
+    return `₨ ${amount.toLocaleString()}`;
   };
 
   const getStatusColor = (status: string) => {
