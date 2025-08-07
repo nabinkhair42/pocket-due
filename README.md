@@ -1,49 +1,43 @@
-# PocketDue - Personal Finance Management App
+<div align="center">
+  <img src="assets/icon.png" alt="PocketDue Logo" width="120" height="120"/>
+  <h1>PocketDue - Personal Finance Management App</h1>
+</div>
 
-**PocketDue** is a comprehensive personal finance management application designed to help you track your income, expenses, and financial goals with ease. Built with modern technologies for both mobile and web platforms.
+**PocketDue** is a comprehensive personal finance management application designed to help you track your income, expenses, and financial goals with ease. Take control of your financial future with our intuitive and powerful finance tracking solution.
 
 ## Features
 
 - **Income & Expense Tracking** - Monitor your cash flow with detailed categorization
 - **Visual Analytics** - Interactive charts and graphs for better financial insights
-- **Budget Management** - Set and track budgets for different categories
-- **Multi-Payment Methods** - Support for various payment methods tracking
-- **Secure Authentication** - User authentication with secure data storage
-- **Cross-Platform** - Available on iOS, Android, and Web
-- **Dark/Light Mode** - Comfortable viewing in any environment
+- **Payment Management** - Track payments you need to make and receive
+- **Financial Summaries** - Get comprehensive overviews of your financial status
+- **Secure Data Storage** - Your financial data is protected with enterprise-grade security
+- **Cross-Platform Access** - Available on iOS, Android, and Web platforms
+- **Real-time Synchronization** - Access your data anywhere, anytime
 - **Financial Goals** - Set and achieve your financial objectives
-- **Data Backup** - Secure cloud storage with Supabase
-- **Export Reports** - Generate and export financial reports
-
-## Tech Stack
-
-### Frontend (React Native)
-- **React Native** - Cross-platform mobile development
-- **Expo** - Development platform and tools
-- **TypeScript** - Type-safe JavaScript
-- **React Navigation** - Navigation library
-- **React Native Reanimated** - Smooth animations
-- **Lucide React Native** - Modern icon library
-- **React Native Vector Icons** - Additional icon sets
-
-### Backend (Node.js API)
-- **Node.js** - JavaScript runtime
-- **Express.js** - Web application framework
-- **TypeScript** - Type-safe JavaScript
-- **MongoDB** with **Mongoose** - Database and ODM
-- **JWT** - Authentication tokens
-- **bcryptjs** - Password hashing
-- **Passport.js** - Authentication middleware
-- **Helmet** - Security middleware
-- **CORS** - Cross-origin resource sharing
-
-### Database & Services
-- **Supabase** - Backend-as-a-Service for real-time features
-- **MongoDB** - NoSQL database for complex data structures
+- **Report Generation** - Generate detailed financial reports for analysis
 
 ## Screenshots
 
-*Screenshots and app preview will be added soon*
+### App Interface
+
+<div style="overflow-x: auto; white-space: nowrap; padding: 10px;">
+  <img src="assets/initial.png" alt="Initial Screen" width="250" style="display: inline-block; margin-right: 10px;"/>
+  <img src="assets/to-pay.png" alt="To Pay Screen" width="250" style="display: inline-block; margin-right: 10px;"/>
+  <img src="assets/to-receive.png" alt="To Receive Screen" width="250" style="display: inline-block; margin-right: 10px;"/>
+  <img src="assets/add-payment.png" alt="Add Payment Screen" width="250" style="display: inline-block; margin-right: 10px;"/>
+  <img src="assets/add-payment-dropdown.png" alt="Payment Type Dropdown" width="250" style="display: inline-block; margin-right: 10px;"/>
+  <img src="assets/payment-summary.png" alt="Payment Summary" width="250" style="display: inline-block; margin-right: 10px;"/>
+  <img src="assets/user-summary.png" alt="User Summary Screen" width="250" style="display: inline-block;"/>
+</div>
+
+### Key Features Showcase
+
+- **Clean and Intuitive Interface** - Modern design with easy navigation
+- **Payment Tracking** - Comprehensive payment management system
+- **Financial Summaries** - Detailed overview of your financial status
+- **Real-time Updates** - Instant synchronization across devices
+- **Visual Analytics** - Charts and graphs for better insights
 
 
 ## Author
@@ -55,7 +49,7 @@
 
 - Thanks to all contributors who helped make this project better
 - Inspired by the need for simple yet powerful personal finance management
-- Built with ❤️ for the open-source community
+- Built with love for the open-source community
 
 
 **Happy Financial Tracking!**
