@@ -1,8 +1,8 @@
 import React from "react";
 import { View, Text, TouchableOpacity, StyleSheet, Alert } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
-import { Edit, Trash2, CheckCircle, Clock } from "lucide-react-native";
-import { Payment } from "../lib/api";
+import { Edit, Trash2, Check, Clock } from "lucide-react-native";
+import { Payment } from "../types/models";
 import { useTheme } from "../contexts/ThemeContext";
 import { getThemeColors } from "../lib/theme";
 
@@ -21,6 +21,12 @@ export const PaymentCard: React.FC<PaymentCardProps> = ({
 }) => {
   const { theme } = useTheme();
   const colors = getThemeColors(theme);
+
+  // Safety check for undefined payment
+  if (!payment || !payment._id) {
+    console.error("PaymentCard received invalid payment:", payment);
+    return null;
+  }
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -41,7 +47,7 @@ export const PaymentCard: React.FC<PaymentCardProps> = ({
         paid: {
           text: "Paid",
           gradient: colors.gradientSuccess,
-          icon: <CheckCircle size={16} color={colors.surface} />,
+          icon: <Check size={16} color={colors.surface} />,
         },
         unpaid: {
           text: "Unpaid",
@@ -54,7 +60,7 @@ export const PaymentCard: React.FC<PaymentCardProps> = ({
         received: {
           text: "Received",
           gradient: colors.gradientSuccess,
-          icon: <CheckCircle size={16} color={colors.surface} />,
+          icon: <Check size={16} color={colors.surface} />,
         },
         pending: {
           text: "Pending",
@@ -66,7 +72,10 @@ export const PaymentCard: React.FC<PaymentCardProps> = ({
   };
 
   const statusInfo = getStatusInfo();
-  const currentStatus = statusInfo[payment.status as keyof typeof statusInfo];
+  const currentStatus =
+    statusInfo[payment.status as keyof typeof statusInfo] ||
+    statusInfo.unpaid ||
+    statusInfo.pending;
 
   const handleDelete = () => {
     Alert.alert(
@@ -177,13 +186,17 @@ export const PaymentCard: React.FC<PaymentCardProps> = ({
         style={styles.statusContainer}
       >
         <LinearGradient
-          colors={currentStatus.gradient as [string, string]}
+          colors={
+            Array.isArray(currentStatus?.gradient)
+              ? (currentStatus.gradient as [string, string])
+              : ["#ef4444", "#dc2626"]
+          }
           style={styles.statusGradient}
         >
           <View style={styles.statusContent}>
-            {currentStatus.icon}
+            {currentStatus?.icon}
             <Text style={[styles.statusText, { color: colors.surface }]}>
-              {currentStatus.text}
+              {currentStatus?.text || "Unknown"}
             </Text>
           </View>
         </LinearGradient>

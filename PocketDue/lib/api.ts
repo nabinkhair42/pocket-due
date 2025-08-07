@@ -1,79 +1,18 @@
 // API service for PocketDue mobile app
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import {
+  ApiResponse,
+  AuthResponse,
+  CreatePaymentRequest,
+  LoginRequest,
+  PaymentResponse,
+  PaymentsResponse,
+  RegisterRequest,
+  UpdatePaymentRequest,
+  UserResponse,
+} from "../types/api";
 
 const API_BASE_URL = "http://192.168.1.66:3000/api";
-
-export interface User {
-  _id: string;
-  email: string;
-  name: string;
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface Payment {
-  _id: string;
-  userId: string;
-  type: "to_pay" | "to_receive";
-  personName: string;
-  amount: number;
-  dueDate: string;
-  description?: string;
-  status: "paid" | "unpaid" | "received" | "pending";
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface CreatePaymentRequest {
-  type: "to_pay" | "to_receive";
-  personName: string;
-  amount: number;
-  dueDate: Date;
-  description?: string;
-}
-
-export interface UpdatePaymentRequest {
-  type?: "to_pay" | "to_receive";
-  personName?: string;
-  amount?: number;
-  dueDate?: Date;
-  description?: string;
-}
-
-export interface RegisterRequest {
-  email: string;
-  password: string;
-  name: string;
-}
-
-export interface LoginRequest {
-  email: string;
-  password: string;
-}
-
-export interface ApiResponse<T = any> {
-  success: boolean;
-  message?: string;
-  data?: T;
-  error?: string;
-}
-
-export interface AuthResponse {
-  user: User;
-  token: string;
-}
-
-export interface PaymentsResponse {
-  payments: Payment[];
-}
-
-export interface PaymentResponse {
-  payment: Payment;
-}
-
-export interface UserResponse {
-  user: User;
-}
 
 class ApiService {
   private async getToken(): Promise<string | null> {

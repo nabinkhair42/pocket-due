@@ -27,6 +27,7 @@ import { useTheme } from "../contexts/ThemeContext";
 import { getThemeColors } from "../lib/theme";
 import { Button } from "../components/Button";
 import { useToast } from "../contexts/ToastContext";
+import { useAuth } from "../hooks/useAuth";
 
 interface SettingsScreenProps {
   onLogout: () => void;
@@ -40,6 +41,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
   const { theme, toggleTheme } = useTheme();
   const colors = getThemeColors(theme);
   const { showToast } = useToast();
+  const { logout, user } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
 
   const handleLogout = () => {
@@ -48,7 +50,8 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
       {
         text: "Logout",
         style: "destructive",
-        onPress: () => {
+        onPress: async () => {
+          await logout();
           showToast("Logged out successfully", "info");
           onLogout();
         },
@@ -161,7 +164,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
           {renderSettingItem(
             <Mail size={20} color={colors.textSecondary} />,
             "Email Address",
-            "nabinkhair12@gmail.com",
+            user?.email || "user@example.com",
             () => showToast("Email editing coming soon", "info")
           )}
         </View>
@@ -295,6 +298,7 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     paddingHorizontal: 20,
+    paddingTop: 20,
   },
   section: {
     marginBottom: 32,

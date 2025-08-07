@@ -8,20 +8,20 @@ import {
   TextInput,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
-import { apiService } from "../lib/api";
+import { useAuth } from "../hooks/useAuth";
 import { useTheme } from "../contexts/ThemeContext";
 import { getThemeColors } from "../lib/theme";
 import { Mail, Lock, User, ChevronLeft } from "lucide-react-native";
 import { Button } from "../components/Button";
 import { AppLogo } from "../components/Icons";
 import { useToast } from "../contexts/ToastContext";
+import { RegisterRequest, LoginRequest } from "../types/api";
 
 interface AuthScreenProps {
   onAuthSuccess: () => void;
 }
 
 export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthSuccess }) => {
-  const [loading, setLoading] = useState(false);
   const [showEmailForm, setShowEmailForm] = useState(false);
   const [showLoginForm, setShowLoginForm] = useState(false);
   const [email, setEmail] = useState("");
@@ -30,6 +30,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthSuccess }) => {
   const { theme } = useTheme();
   const colors = getThemeColors(theme);
   const { showToast } = useToast();
+  const { register, login, loading } = useAuth();
 
   const handleRegister = async () => {
     if (!email.trim() || !password.trim() || !name.trim()) {
@@ -37,24 +38,19 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthSuccess }) => {
       return;
     }
 
-    setLoading(true);
-    try {
-      const result = await apiService.register({
-        email: email.trim(),
-        password: password.trim(),
-        name: name.trim(),
-      });
+    const data: RegisterRequest = {
+      email: email.trim(),
+      password: password.trim(),
+      name: name.trim(),
+    };
 
-      if (result.success) {
-        showToast("Registration successful!", "success");
-        onAuthSuccess();
-      } else {
-        showToast(result.error || "Registration failed", "error");
-      }
-    } catch (error: any) {
-      showToast(error.message || "Registration failed", "error");
-    } finally {
-      setLoading(false);
+    const result = await register(data);
+
+    if (result.success) {
+      showToast("Registration successful!", "success");
+      onAuthSuccess();
+    } else {
+      showToast(result.error || "Registration failed", "error");
     }
   };
 
@@ -64,23 +60,18 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthSuccess }) => {
       return;
     }
 
-    setLoading(true);
-    try {
-      const result = await apiService.login({
-        email: email.trim(),
-        password: password.trim(),
-      });
+    const data: LoginRequest = {
+      email: email.trim(),
+      password: password.trim(),
+    };
 
-      if (result.success) {
-        showToast("Login successful!", "success");
-        onAuthSuccess();
-      } else {
-        showToast(result.error || "Login failed", "error");
-      }
-    } catch (error: any) {
-      showToast(error.message || "Login failed", "error");
-    } finally {
-      setLoading(false);
+    const result = await login(data);
+
+    if (result.success) {
+      showToast("Login successful!", "success");
+      onAuthSuccess();
+    } else {
+      showToast(result.error || "Login failed", "error");
     }
   };
 

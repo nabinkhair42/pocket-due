@@ -1,19 +1,19 @@
-import React, { useState, useEffect } from "react";
+import DateTimePicker from "@react-native-community/datetimepicker";
+import { Calendar, DollarSign, FileText, User, X } from "lucide-react-native";
+import React, { useEffect, useState } from "react";
 import {
-  View,
+  Modal,
+  ScrollView,
+  StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
-  StyleSheet,
-  Modal,
-  ScrollView,
+  View,
 } from "react-native";
-import DateTimePicker from "@react-native-community/datetimepicker";
-import { LinearGradient } from "expo-linear-gradient";
-import { X, User, DollarSign, Calendar, FileText } from "lucide-react-native";
-import { Payment, CreatePaymentRequest } from "../lib/api";
 import { useTheme } from "../contexts/ThemeContext";
 import { getThemeColors } from "../lib/theme";
+import { CreatePaymentRequest } from "../types/api";
+import { Payment } from "../types/models";
 import { Button } from "./Button";
 
 interface AddPaymentDrawerProps {
@@ -213,7 +213,7 @@ export const AddPaymentDrawer: React.FC<AddPaymentDrawerProps> = ({
             {renderInputField(
               <FileText size={20} color={colors.textSecondary} />,
               "Description (optional)",
-              formData.description,
+              formData.description || "",
               (text) => setFormData({ ...formData, description: text }),
               "default",
               true

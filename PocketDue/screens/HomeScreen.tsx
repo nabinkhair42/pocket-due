@@ -9,7 +9,8 @@ import {
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { Settings, Plus } from "lucide-react-native";
-import { apiService, Payment, CreatePaymentRequest } from "../lib/api";
+import { usePayment } from "../hooks/usePayment";
+import { useAuth } from "../hooks/useAuth";
 import { useTheme } from "../contexts/ThemeContext";
 import { getThemeColors } from "../lib/theme";
 import { PaymentCard } from "../components/PaymentCard";
@@ -18,6 +19,8 @@ import { AddPaymentDrawer } from "../components/AddPaymentDrawer";
 import { SettingsScreen } from "./SettingsScreen";
 import { Button } from "../components/Button";
 import { useToast } from "../contexts/ToastContext";
+import { Payment } from "../types/models";
+import { CreatePaymentRequest } from "../types/api";
 
 interface HomeScreenProps {
   onLogout: () => void;
@@ -27,19 +30,32 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onLogout }) => {
   const [currentTab, setCurrentTab] = useState<"to_pay" | "to_receive">(
     "to_pay"
   );
-  const [payments, setPayments] = useState<Payment[]>([]);
-  const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [drawerVisible, setDrawerVisible] = useState(false);
   const [editingPayment, setEditingPayment] = useState<Payment | null>(null);
   const [showSettings, setShowSettings] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(true);
   const { theme } = useTheme();
   const colors = getThemeColors(theme);
   const { showToast } = useToast();
+  const { logout } = useAuth();
+  const {
+    payments,
+    loading,
+    getPayments,
+    createPayment,
+    updatePayment,
+    togglePaymentStatus,
+    deletePayment,
+    getPaymentsByType,
+  } = usePayment();
 
-  const filteredPayments = payments.filter(
-    (payment) => payment.type === currentTab
-  );
+  const filteredPayments = getPaymentsByType(currentTab) || [];
+
+  // Debug logging
+  console.log("Current tab:", currentTab);
+  console.log("All payments:", payments);
+  console.log("Filtered payments:", filteredPayments);
 
   useEffect(() => {
     loadPayments();
@@ -47,38 +63,29 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onLogout }) => {
 
   const loadPayments = async () => {
     try {
-      const result = await apiService.getPayments();
+      const paymentsArray = await getPayments();
+      console.log("Payments loaded:", paymentsArray);
+      console.log("Payments type:", typeof paymentsArray);
+      console.log(
+        "Payments length:",
+        Array.isArray(paymentsArray) ? paymentsArray.length : "Not an array"
+      );
 
-      if (result.success && result.data?.payments) {
-        setPayments(result.data.payments);
-      } else {
-        console.error("Error loading payments:", result.error);
-        showToast("Failed to load payments", "error");
-        setPayments([]); // Set empty array as fallback
-      }
+      setIsAuthenticated(true);
     } catch (error) {
       console.error("Error loading payments:", error);
       showToast("Failed to load payments", "error");
-      setPayments([]); // Set empty array as fallback
     } finally {
-      setLoading(false);
       setRefreshing(false);
     }
   };
 
   const handleAddPayment = async (formData: CreatePaymentRequest) => {
-    try {
-      const result = await apiService.createPayment(formData);
-
-      if (result.success && result.data?.payment) {
-        setPayments((prev) => [result.data!.payment, ...prev]);
-        setDrawerVisible(false);
-        showToast("Payment added successfully!", "success");
-      } else {
-        showToast(result.error || "Failed to add payment", "error");
-      }
-    } catch (error) {
-      console.error("Error adding payment:", error);
+    const payment = await createPayment(formData);
+    if (payment) {
+      setDrawerVisible(false);
+      showToast("Payment added successfully!", "success");
+    } else {
       showToast("Failed to add payment", "error");
     }
   };
@@ -86,45 +93,19 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onLogout }) => {
   const handleUpdatePayment = async (formData: CreatePaymentRequest) => {
     if (!editingPayment) return;
 
-    try {
-      const result = await apiService.updatePayment(
-        editingPayment._id,
-        formData
-      );
-
-      if (result.success && result.data?.payment) {
-        setPayments((prev) =>
-          prev.map((payment) =>
-            payment._id === editingPayment._id ? result.data!.payment : payment
-          )
-        );
-        setDrawerVisible(false);
-        setEditingPayment(null);
-        showToast("Payment updated successfully!", "success");
-      } else {
-        showToast(result.error || "Failed to update payment", "error");
-      }
-    } catch (error) {
-      console.error("Error updating payment:", error);
+    const payment = await updatePayment(editingPayment._id, formData);
+    if (payment) {
+      setDrawerVisible(false);
+      setEditingPayment(null);
+      showToast("Payment updated successfully!", "success");
+    } else {
       showToast("Failed to update payment", "error");
     }
   };
 
   const handleToggleStatus = async (id: string) => {
-    try {
-      const result = await apiService.togglePaymentStatus(id);
-
-      if (result.success && result.data?.payment) {
-        setPayments((prev) =>
-          prev.map((payment) =>
-            payment._id === id ? result.data!.payment : payment
-          )
-        );
-      } else {
-        showToast(result.error || "Failed to toggle payment status", "error");
-      }
-    } catch (error) {
-      console.error("Error toggling payment status:", error);
+    const payment = await togglePaymentStatus(id);
+    if (!payment) {
       showToast("Failed to toggle payment status", "error");
     }
   };
@@ -135,17 +116,10 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onLogout }) => {
   };
 
   const handleDeletePayment = async (id: string) => {
-    try {
-      const result = await apiService.deletePayment(id);
-
-      if (result.success) {
-        setPayments((prev) => prev.filter((payment) => payment._id !== id));
-        showToast("Payment deleted successfully!", "success");
-      } else {
-        showToast(result.error || "Failed to delete payment", "error");
-      }
-    } catch (error) {
-      console.error("Error deleting payment:", error);
+    const success = await deletePayment(id);
+    if (success) {
+      showToast("Payment deleted successfully!", "success");
+    } else {
       showToast("Failed to delete payment", "error");
     }
   };
@@ -165,7 +139,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onLogout }) => {
 
   const handleLogout = async () => {
     try {
-      await apiService.logout();
+      await logout();
       onLogout();
     } catch (error) {
       console.error("Error logging out:", error);
@@ -190,14 +164,22 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onLogout }) => {
     </View>
   );
 
-  const renderPaymentCard = ({ item }: { item: Payment }) => (
-    <PaymentCard
-      payment={item}
-      onEdit={handleEditPayment}
-      onDelete={handleDeletePayment}
-      onToggleStatus={handleToggleStatus}
-    />
-  );
+  const renderPaymentCard = ({ item }: { item: Payment }) => {
+    console.log("Rendering payment card with item:", item);
+    if (!item || !item._id) {
+      console.error("Invalid payment item:", item);
+      return null;
+    }
+
+    return (
+      <PaymentCard
+        payment={item}
+        onEdit={handleEditPayment}
+        onDelete={handleDeletePayment}
+        onToggleStatus={handleToggleStatus}
+      />
+    );
+  };
 
   if (showSettings) {
     return (
@@ -238,7 +220,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onLogout }) => {
           </View>
         ) : (
           <FlatList
-            data={filteredPayments || []}
+            data={Array.isArray(filteredPayments) ? filteredPayments : []}
             renderItem={renderPaymentCard}
             keyExtractor={(item) => item._id}
             contentContainerStyle={styles.listContainer}

@@ -35,6 +35,7 @@ export const themeColors = {
     // Gradient colors
     gradientPrimary: ["#3b82f6", "#2563eb"],
     gradientSecondary: ["#10b981", "#059669"],
+    gradientSuccess: ["#10b981", "#059669"],
     gradientError: ["#ef4444", "#dc2626"],
 
     // Overlay colors
@@ -75,6 +76,7 @@ export const themeColors = {
     // Gradient colors
     gradientPrimary: ["#3b82f6", "#2563eb"],
     gradientSecondary: ["#10b981", "#059669"],
+    gradientSuccess: ["#10b981", "#059669"],
     gradientError: ["#ef4444", "#dc2626"],
 
     // Overlay colors
