@@ -14,8 +14,10 @@ import {
   Sun,
   Trash2,
   User,
+  UserCheck,
+  PenTool,
 } from "lucide-react-native";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Alert,
   Modal,
@@ -142,6 +144,29 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
     </TouchableOpacity>
   );
 
+  // Debug section - remove this after testing
+  const debugSection = (
+    <View style={styles.section}>
+      {renderSectionHeader("Debug", <Info size={20} color={colors.primary} />)}
+      {renderSettingItem(
+        <Info size={20} color={colors.textSecondary} />,
+        "User Status",
+        user ? `Logged in as ${user.name}` : "Not logged in",
+        () =>
+          showToast(
+            user ? "User is logged in" : "User is not logged in",
+            "info"
+          )
+      )}
+      {renderSettingItem(
+        <Info size={20} color={colors.textSecondary} />,
+        "User Data",
+        user ? JSON.stringify(user).substring(0, 50) + "..." : "No user data",
+        () => showToast(user ? JSON.stringify(user) : "No user data", "info")
+      )}
+    </View>
+  );
+
   if (showEditProfile) {
     return <EditProfileScreen onBack={() => setShowEditProfile(false)} />;
   }
@@ -167,112 +192,120 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
         </View>
       </LinearGradient>
 
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        {/* Profile Section */}
-        <View style={styles.section}>
-          {renderSectionHeader(
-            "Profile",
-            <User size={20} color={colors.primary} />
-          )}
-          {renderSettingItem(
-            <User size={20} color={colors.textSecondary} />,
-            "Edit Profile",
-            "Update your personal information",
-            () => setShowEditProfile(true)
-          )}
-          {renderSettingItem(
-            <Mail size={20} color={colors.textSecondary} />,
-            "Email Address",
-            user?.email || "user@example.com",
-            () => showToast("Email editing coming soon", "info")
-          )}
-        </View>
+      <View style={styles.mainContent}>
+        <ScrollView
+          style={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+        >
+          {/* Profile Section */}
+          <View style={styles.section}>
+            {renderSectionHeader(
+              "Profile",
+              <User size={20} color={colors.primary} />
+            )}
+            {renderSettingItem(
+              <PenTool size={20} color={colors.textSecondary} />,
+              "Edit Profile",
+              "Update your personal information",
+              () => setShowEditProfile(true)
+            )}
+            {renderSettingItem(
+              <UserCheck size={20} color={colors.textSecondary} />,
+              user?.name || "User Name",
+              user?.email || "user@example.com",
+              () => showToast("Profile info", "info")
+            )}
+          </View>
 
-        {/* Appearance Section */}
-        <View style={styles.section}>
-          {renderSectionHeader(
-            "Appearance",
-            <SettingsIcon size={20} color={colors.primary} />
-          )}
-          {renderSettingItem(
-            theme === "dark" ? (
-              <Moon size={20} color={colors.textSecondary} />
-            ) : (
-              <Sun size={20} color={colors.textSecondary} />
-            ),
-            "Dark Mode",
-            "Switch between light and dark themes",
-            undefined,
-            <Switch
-              value={theme === "dark"}
-              onValueChange={toggleTheme}
-              trackColor={{
-                false: colors.surfaceSecondary,
-                true: colors.primary,
-              }}
-              thumbColor={colors.surface}
-            />
-          )}
-        </View>
+          {/* Appearance Section */}
+          <View style={styles.section}>
+            {renderSectionHeader(
+              "Appearance",
+              <SettingsIcon size={20} color={colors.primary} />
+            )}
+            {renderSettingItem(
+              theme === "dark" ? (
+                <Moon size={20} color={colors.textSecondary} />
+              ) : (
+                <Sun size={20} color={colors.textSecondary} />
+              ),
+              "Dark Mode",
+              "Switch between light and dark themes",
+              undefined,
+              <Switch
+                value={theme === "dark"}
+                onValueChange={toggleTheme}
+                trackColor={{
+                  false: colors.surfaceSecondary,
+                  true: colors.primary,
+                }}
+                thumbColor={colors.surface}
+              />
+            )}
+          </View>
 
-        {/* Security Section */}
-        <View style={styles.section}>
-          {renderSectionHeader(
-            "Security",
-            <Shield size={20} color={colors.primary} />
-          )}
-          {renderSettingItem(
-            <Shield size={20} color={colors.textSecondary} />,
-            "Change Password",
-            "Update your account password",
-            () => setShowChangePassword(true)
-          )}
-        </View>
+          {/* Security Section */}
+          <View style={styles.section}>
+            {renderSectionHeader(
+              "Security",
+              <Shield size={20} color={colors.primary} />
+            )}
+            {renderSettingItem(
+              <Shield size={20} color={colors.textSecondary} />,
+              "Change Password",
+              "Update your account password",
+              () => setShowChangePassword(true)
+            )}
+          </View>
 
-        {/* Data Section */}
-        <View style={styles.section}>
-          {renderSectionHeader(
-            "Data & Privacy",
-            <Calendar size={20} color={colors.primary} />
-          )}
-          {renderSettingItem(
-            <Calendar size={20} color={colors.textSecondary} />,
-            "Export Data",
-            "Download your payment history",
-            () => showToast("Data export coming soon", "info")
-          )}
-          {renderSettingItem(
-            <Trash2 size={20} color={colors.error} />,
-            "Delete Account",
-            "Permanently delete your account and data",
-            handleDeleteAccount,
-            undefined,
-            true
-          )}
-        </View>
+          {/* Data Section */}
+          <View style={styles.section}>
+            {renderSectionHeader(
+              "Data & Privacy",
+              <Calendar size={20} color={colors.primary} />
+            )}
+            {renderSettingItem(
+              <Calendar size={20} color={colors.textSecondary} />,
+              "Export Data",
+              "Download your payment history",
+              () => showToast("Data export coming soon", "info")
+            )}
+            {renderSettingItem(
+              <Trash2 size={20} color={colors.error} />,
+              "Delete Account",
+              "Permanently delete your account and data",
+              handleDeleteAccount,
+              undefined,
+              true
+            )}
+          </View>
 
-        {/* Support Section */}
-        <View style={styles.section}>
-          {renderSectionHeader(
-            "Support",
-            <HelpCircle size={20} color={colors.primary} />
-          )}
-          {renderSettingItem(
-            <HelpCircle size={20} color={colors.textSecondary} />,
-            "Help & Support",
-            "Get help with the app",
-            () => showToast("Support coming soon", "info")
-          )}
-          {renderSettingItem(
-            <Info size={20} color={colors.textSecondary} />,
-            "About PocketDue",
-            "Version 1.0.0",
-            () => showToast("About coming soon", "info")
-          )}
-        </View>
+          {/* Support Section */}
+          <View style={styles.section}>
+            {renderSectionHeader(
+              "Support",
+              <HelpCircle size={20} color={colors.primary} />
+            )}
+            {renderSettingItem(
+              <HelpCircle size={20} color={colors.textSecondary} />,
+              "Help & Support",
+              "Get help with the app",
+              () => showToast("Support coming soon", "info")
+            )}
+            {renderSettingItem(
+              <Info size={20} color={colors.textSecondary} />,
+              "About PocketDue",
+              "Version 1.0.0",
+              () => showToast("About coming soon", "info")
+            )}
+          </View>
 
-        {/* Logout Section */}
-        <View style={styles.section}>
+          {/* Debug Section */}
+          {debugSection}
+        </ScrollView>
+
+        {/* Fixed Logout Button */}
+        <View style={styles.logoutContainer}>
           <Button
             onPress={handleLogout}
             variant="danger"
@@ -287,7 +320,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
             </View>
           </Button>
         </View>
-      </ScrollView>
+      </View>
 
       {/* Delete Account Modal */}
       <Modal
@@ -450,6 +483,14 @@ const styles = StyleSheet.create({
   headerSpacer: {
     flex: 1,
   },
+  mainContent: {
+    flex: 1,
+    paddingHorizontal: 20,
+    paddingTop: 20,
+  },
+  scrollContent: {
+    flex: 1,
+  },
   content: {
     flex: 1,
     paddingHorizontal: 20,
@@ -506,6 +547,10 @@ const styles = StyleSheet.create({
   },
   settingRight: {
     marginLeft: 12,
+  },
+  logoutContainer: {
+    paddingTop: 20,
+    paddingBottom: 40,
   },
   logoutButton: {
     flexDirection: "row",

@@ -23,7 +23,6 @@ function AppContent() {
         setUser(result.data.user);
       }
     } catch (error) {
-      console.error("Auth check failed:", error);
     } finally {
       setLoading(false);
     }

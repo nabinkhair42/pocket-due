@@ -20,7 +20,6 @@ export const usePayment = () => {
       }
       return [];
     } catch (error) {
-      console.error("Error loading payments:", error);
       return [];
     } finally {
       setLoading(false);
@@ -40,7 +39,6 @@ export const usePayment = () => {
         }
         return null;
       } catch (error) {
-        console.error("Error creating payment:", error);
         return null;
       }
     },
@@ -63,7 +61,6 @@ export const usePayment = () => {
         }
         return null;
       } catch (error) {
-        console.error("Error updating payment:", error);
         return null;
       }
     },
@@ -86,7 +83,6 @@ export const usePayment = () => {
         }
         return null;
       } catch (error) {
-        console.error("Error toggling payment status:", error);
         return null;
       }
     },
@@ -106,7 +102,6 @@ export const usePayment = () => {
       }
       return false;
     } catch (error) {
-      console.error("Error deleting payment:", error);
       return false;
     }
   }, []);
@@ -114,7 +109,6 @@ export const usePayment = () => {
   const getPaymentsByType = useCallback(
     (type: "to_pay" | "to_receive"): Payment[] => {
       if (!Array.isArray(payments)) {
-        console.warn("Payments is not an array:", payments);
         return [];
       }
       return payments.filter((payment) => payment.type === type);

@@ -53,11 +53,6 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onLogout }) => {
 
   const filteredPayments = getPaymentsByType(currentTab) || [];
 
-  // Debug logging
-  console.log("Current tab:", currentTab);
-  console.log("All payments:", payments);
-  console.log("Filtered payments:", filteredPayments);
-
   useEffect(() => {
     loadPayments();
     // Preload previous users for faster dropdown access
@@ -67,24 +62,15 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onLogout }) => {
   const preloadPreviousUsers = async () => {
     try {
       await apiService.getPreviousUsers();
-    } catch (error) {
-      console.error("Error preloading previous users:", error);
-    }
+    } catch (error) {}
   };
 
   const loadPayments = async () => {
     try {
       const paymentsArray = await getPayments();
-      console.log("Payments loaded:", paymentsArray);
-      console.log("Payments type:", typeof paymentsArray);
-      console.log(
-        "Payments length:",
-        Array.isArray(paymentsArray) ? paymentsArray.length : "Not an array"
-      );
 
       setIsAuthenticated(true);
     } catch (error) {
-      console.error("Error loading payments:", error);
       showToast("Failed to load payments", "error");
     } finally {
       setRefreshing(false);
@@ -153,7 +139,6 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onLogout }) => {
       await logout();
       onLogout();
     } catch (error) {
-      console.error("Error logging out:", error);
       onLogout();
     }
   };
@@ -176,9 +161,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onLogout }) => {
   );
 
   const renderPaymentCard = ({ item }: { item: Payment }) => {
-    console.log("Rendering payment card with item:", item);
     if (!item || !item._id) {
-      console.error("Invalid payment item:", item);
       return null;
     }
 

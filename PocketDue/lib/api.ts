@@ -17,9 +17,9 @@ const API_BASE_URL = "http://192.168.1.66:3000/api";
 class ApiService {
   private async getToken(): Promise<string | null> {
     try {
-      return await AsyncStorage.getItem("authToken");
+      const token = await AsyncStorage.getItem("authToken");
+      return token;
     } catch (error) {
-      console.error("Error getting token:", error);
       return null;
     }
   }
@@ -28,7 +28,6 @@ class ApiService {
     try {
       await AsyncStorage.setItem("authToken", token);
     } catch (error) {
-      console.error("Error setting token:", error);
     }
   }
 
@@ -36,7 +35,6 @@ class ApiService {
     try {
       await AsyncStorage.removeItem("authToken");
     } catch (error) {
-      console.error("Error removing token:", error);
     }
   }
 
@@ -46,6 +44,7 @@ class ApiService {
   ): Promise<ApiResponse<T>> {
     try {
       const token = await this.getToken();
+
       const headers: Record<string, string> = {
         "Content-Type": "application/json",
         ...(options.headers as Record<string, string>),
@@ -55,17 +54,12 @@ class ApiService {
         headers.Authorization = `Bearer ${token}`;
       }
 
-      console.log(`Making request to: ${API_BASE_URL}${endpoint}`);
-      console.log("Headers:", headers);
-
       const response = await fetch(`${API_BASE_URL}${endpoint}`, {
         ...options,
         headers,
       });
 
-      console.log("Response status:", response.status);
       const data = await response.json();
-      console.log("Response data:", data);
 
       if (!response.ok) {
         return {
@@ -77,7 +71,6 @@ class ApiService {
 
       return data;
     } catch (error: any) {
-      console.error("API Error:", error);
       return {
         success: false,
         message: "Request failed",
@@ -115,7 +108,9 @@ class ApiService {
   }
 
   async getCurrentUser(): Promise<ApiResponse<UserResponse>> {
-    return this.makeRequest<UserResponse>("/auth/me");
+    return this.makeRequest<UserResponse>("/auth/me", {
+      method: "GET",
+    });
   }
 
   async updateProfile(data: {

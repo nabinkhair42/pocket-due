@@ -79,7 +79,6 @@ export const AddPaymentDrawer: React.FC<AddPaymentDrawerProps> = ({
         setPreviousUsers(response.data.previousUsers);
       }
     } catch (error) {
-      console.error("Error loading previous users:", error);
     } finally {
       setLoadingUsers(false);
     }

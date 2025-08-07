@@ -65,21 +65,19 @@ router.post(
 // Get current user
 router.get(
   "/me",
+  authenticateToken as unknown as RequestHandler,
   handleAsync(async (req: Request, res: Response): Promise<void> => {
-    const token = req.headers.authorization?.split(" ")[1];
-    if (!token) {
+    const userId = (req as unknown as AuthRequest).user?._id;
+    if (!userId) {
       res.status(401).json({
         success: false,
-        message: "No token provided",
-        error: "Authentication required",
+        message: "Authentication required",
+        error: "User not authenticated",
       });
       return;
     }
 
-    const decoded = jwt.verify(token as string, config.JWT_SECRET) as {
-      userId: string;
-    };
-    const user = await authService.getCurrentUser(decoded.userId);
+    const user = await authService.getCurrentUser(userId as string);
 
     res.json({
       success: true,

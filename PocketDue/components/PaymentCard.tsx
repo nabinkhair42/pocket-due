@@ -24,7 +24,6 @@ export const PaymentCard: React.FC<PaymentCardProps> = ({
 
   // Safety check for undefined payment
   if (!payment || !payment._id) {
-    console.error("PaymentCard received invalid payment:", payment);
     return null;
   }
 

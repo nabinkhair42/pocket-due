@@ -38,7 +38,6 @@ export const useUser = () => {
           return false;
         }
       } catch (error: any) {
-        console.error("Error updating profile:", error);
         showToast(
           error.message || "Failed to update profile. Please try again.",
           "error"
@@ -100,7 +99,6 @@ export const useUser = () => {
           return false;
         }
       } catch (error: any) {
-        console.error("Error changing password:", error);
         showToast(
           error.message || "Failed to change password. Please try again.",
           "error"
@@ -134,7 +132,6 @@ export const useUser = () => {
           return false;
         }
       } catch (error: any) {
-        console.error("Error deleting account:", error);
         showToast(
           error.message || "Failed to delete account. Please try again.",
           "error"

@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { apiService } from "../lib/api";
 import { User } from "../types/models";
 import {
@@ -11,6 +11,34 @@ import {
 export const useAuth = () => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(false);
+
+  const getCurrentUser = useCallback(async (): Promise<User | null> => {
+    try {
+      const result = await apiService.getCurrentUser();
+      if (result.success && result.data?.user) {
+        setUser(result.data.user);
+        return result.data.user;
+      }
+      return null;
+    } catch (error) {
+      return null;
+    }
+  }, []);
+
+  // Load current user on mount
+  useEffect(() => {
+    const loadCurrentUser = async () => {
+      try {
+        const currentUser = await getCurrentUser();
+        if (currentUser) {
+          setUser(currentUser);
+        }
+      } catch (error) {
+      }
+    };
+
+    loadCurrentUser();
+  }, [getCurrentUser]);
 
   const register = useCallback(
     async (data: RegisterRequest): Promise<ApiResponse<AuthResponse>> => {
@@ -59,21 +87,6 @@ export const useAuth = () => {
       await apiService.logout();
       setUser(null);
     } catch (error) {
-      console.error("Logout error:", error);
-    }
-  }, []);
-
-  const getCurrentUser = useCallback(async (): Promise<User | null> => {
-    try {
-      const result = await apiService.getCurrentUser();
-      if (result.success && result.data?.user) {
-        setUser(result.data.user);
-        return result.data.user;
-      }
-      return null;
-    } catch (error) {
-      console.error("Get current user error:", error);
-      return null;
     }
   }, []);
 
