@@ -1,6 +1,6 @@
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { Calendar, DollarSign, FileText, User, X } from "lucide-react-native";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import {
   Modal,
   ScrollView,
@@ -9,13 +9,16 @@ import {
   TextInput,
   TouchableOpacity,
   View,
+  FlatList,
+  Animated,
+  Dimensions,
 } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "../contexts/ThemeContext";
 import { getThemeColors } from "../lib/theme";
 import { CreatePaymentRequest } from "../types/api";
 import { Payment } from "../types/models";
 import { Button } from "./Button";
-import { Dropdown } from "./Dropdown";
 import { apiService } from "../lib/api";
 
 interface AddPaymentDrawerProps {
@@ -24,6 +27,8 @@ interface AddPaymentDrawerProps {
   onSubmit: (data: CreatePaymentRequest) => void;
   editingPayment?: Payment | null;
 }
+
+const { width } = Dimensions.get("window");
 
 export const AddPaymentDrawer: React.FC<AddPaymentDrawerProps> = ({
   visible,
@@ -43,6 +48,23 @@ export const AddPaymentDrawer: React.FC<AddPaymentDrawerProps> = ({
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [previousUsers, setPreviousUsers] = useState<string[]>([]);
   const [loadingUsers, setLoadingUsers] = useState(false);
+
+  // Dropdown state
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [searchText, setSearchText] = useState("");
+  const slideAnim = useRef(new Animated.Value(0)).current;
+
+  const filteredOptions = previousUsers.filter((option) =>
+    option.toLowerCase().includes(searchText.toLowerCase())
+  );
+
+  useEffect(() => {
+    Animated.timing(slideAnim, {
+      toValue: isDropdownOpen ? 1 : 0,
+      duration: 200,
+      useNativeDriver: false,
+    }).start();
+  }, [isDropdownOpen]);
 
   useEffect(() => {
     if (editingPayment) {
@@ -87,6 +109,23 @@ export const AddPaymentDrawer: React.FC<AddPaymentDrawerProps> = ({
       console.error("Error loading previous users:", error);
     } finally {
       setLoadingUsers(false);
+    }
+  };
+
+  const handlePersonNameSelect = (selectedValue: string) => {
+    setFormData({ ...formData, personName: selectedValue });
+    setIsDropdownOpen(false);
+    setSearchText("");
+  };
+
+  const handlePersonNameChange = (text: string) => {
+    setFormData({ ...formData, personName: text });
+    setSearchText(text);
+    // Show dropdown when typing and there are previous users
+    if (text.length > 0 && previousUsers.length > 0) {
+      setIsDropdownOpen(true);
+    } else {
+      setIsDropdownOpen(false);
     }
   };
 
@@ -145,7 +184,7 @@ export const AddPaymentDrawer: React.FC<AddPaymentDrawerProps> = ({
           </Text>
         </View>
 
-        <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+        <View style={styles.content}>
           <View style={styles.section}>
             <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>
               Payment Type
@@ -211,7 +250,7 @@ export const AddPaymentDrawer: React.FC<AddPaymentDrawerProps> = ({
               Payment Details
             </Text>
 
-            {/* Person Name Field with Dropdown */}
+            {/* Integrated Person Name Field with Dropdown */}
             <View style={styles.personNameContainer}>
               <View
                 style={[
@@ -231,25 +270,94 @@ export const AddPaymentDrawer: React.FC<AddPaymentDrawerProps> = ({
                   }
                   placeholderTextColor={colors.textTertiary}
                   value={formData.personName}
-                  onChangeText={(text) =>
-                    setFormData({ ...formData, personName: text })
-                  }
+                  onChangeText={handlePersonNameChange}
+                  onFocus={() => {
+                    if (
+                      previousUsers.length > 0 &&
+                      formData.personName.length > 0
+                    ) {
+                      setIsDropdownOpen(true);
+                    }
+                  }}
                 />
+                {previousUsers.length > 0 && (
+                  <TouchableOpacity
+                    onPress={() => setIsDropdownOpen(!isDropdownOpen)}
+                    style={styles.dropdownToggle}
+                  >
+                    <Ionicons
+                      name={isDropdownOpen ? "chevron-up" : "chevron-down"}
+                      size={20}
+                      color={colors.textSecondary}
+                    />
+                  </TouchableOpacity>
+                )}
               </View>
 
-              <View style={styles.dropdownContainer}>
-                <Dropdown
-                  value=""
-                  onValueChange={(value) =>
-                    setFormData({ ...formData, personName: value })
-                  }
-                  placeholder={
-                    loadingUsers ? "Loading..." : "Select from previous users"
-                  }
-                  options={previousUsers}
-                  disabled={loadingUsers}
-                />
-              </View>
+              {/* Inline Dropdown */}
+              {isDropdownOpen && previousUsers.length > 0 && (
+                <Animated.View
+                  style={[
+                    styles.inlineDropdown,
+                    {
+                      backgroundColor: colors.cardBackground,
+                      borderColor: colors.border,
+                      transform: [
+                        {
+                          translateY: slideAnim.interpolate({
+                            inputRange: [0, 1],
+                            outputRange: [-10, 0],
+                          }),
+                        },
+                      ],
+                      opacity: slideAnim,
+                    },
+                  ]}
+                >
+                  <View style={styles.optionsList}>
+                    {filteredOptions.map((item) => (
+                      <TouchableOpacity
+                        key={item}
+                        style={[
+                          styles.option,
+                          { borderBottomColor: colors.borderSecondary },
+                          formData.personName === item && {
+                            backgroundColor: colors.primary,
+                          },
+                        ]}
+                        onPress={() => handlePersonNameSelect(item)}
+                      >
+                        <Text
+                          style={[
+                            styles.optionText,
+                            {
+                              color:
+                                formData.personName === item
+                                  ? colors.surface
+                                  : colors.textPrimary,
+                            },
+                          ]}
+                        >
+                          {item}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+
+                  {filteredOptions.length === 0 && (
+                    <View style={styles.emptyState}>
+                      <Text
+                        style={[
+                          styles.emptyText,
+                          { color: colors.textSecondary },
+                        ]}
+                      >
+                        No previous users found
+                      </Text>
+                    </View>
+                  )}
+                </Animated.View>
+              )}
             </View>
             {renderInputField(
               <DollarSign size={20} color={colors.textSecondary} />,
@@ -336,7 +444,7 @@ export const AddPaymentDrawer: React.FC<AddPaymentDrawerProps> = ({
               </Text>
             </TouchableOpacity>
           </View>
-        </ScrollView>
+        </View>
 
         <View style={styles.footer}>
           <Button
@@ -391,6 +499,7 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     paddingHorizontal: 20,
+    paddingBottom: 20,
   },
   section: {
     marginBottom: 24,
@@ -457,10 +566,77 @@ const styles = StyleSheet.create({
   },
   personNameContainer: {
     marginBottom: 16,
+    position: "relative",
   },
-  dropdownContainer: {
-    marginTop: 8,
-    marginBottom: 16,
+  dropdownToggle: {
+    padding: 4,
+  },
+  overlay: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  dropdown: {
+    width: width - 40,
+    maxHeight: 250,
+    borderRadius: 12,
+    borderWidth: 1,
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  inlineDropdown: {
+    position: "absolute",
+    top: "100%",
+    left: 0,
+    right: 0,
+    maxHeight: 200,
+    borderRadius: 8,
+    borderWidth: 1,
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 4,
+    zIndex: 1000,
+  },
+  searchContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+  },
+  searchIcon: {
+    marginRight: 8,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 16,
+  },
+  optionsList: {
+    maxHeight: 200,
+  },
+  option: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+  },
+  optionText: {
+    fontSize: 16,
+  },
+  emptyState: {
+    padding: 20,
+    alignItems: "center",
+  },
+  emptyText: {
+    fontSize: 14,
   },
   quickAmountContainer: {
     marginBottom: 16,

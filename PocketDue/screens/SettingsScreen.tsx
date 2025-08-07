@@ -144,28 +144,6 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
     </TouchableOpacity>
   );
 
-  // Debug section - remove this after testing
-  const debugSection = (
-    <View style={styles.section}>
-      {renderSectionHeader("Debug", <Info size={20} color={colors.primary} />)}
-      {renderSettingItem(
-        <Info size={20} color={colors.textSecondary} />,
-        "User Status",
-        user ? `Logged in as ${user.name}` : "Not logged in",
-        () =>
-          showToast(
-            user ? "User is logged in" : "User is not logged in",
-            "info"
-          )
-      )}
-      {renderSettingItem(
-        <Info size={20} color={colors.textSecondary} />,
-        "User Data",
-        user ? JSON.stringify(user).substring(0, 50) + "..." : "No user data",
-        () => showToast(user ? JSON.stringify(user) : "No user data", "info")
-      )}
-    </View>
-  );
 
   if (showEditProfile) {
     return <EditProfileScreen onBack={() => setShowEditProfile(false)} />;
@@ -301,8 +279,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
             )}
           </View>
 
-          {/* Debug Section */}
-          {debugSection}
+  
         </ScrollView>
 
         {/* Fixed Logout Button */}
