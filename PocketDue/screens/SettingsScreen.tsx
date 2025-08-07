@@ -4,10 +4,10 @@ import {
   ChevronLeft,
   Eye,
   EyeOff,
+  Fingerprint,
   HelpCircle,
   Info,
   LogOut,
-  Mail,
   Moon,
   Settings as SettingsIcon,
   Shield,
@@ -15,9 +15,9 @@ import {
   Trash2,
   User,
   UserCheck,
-  PenTool,
+  UserPenIcon,
 } from "lucide-react-native";
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import {
   Alert,
   Modal,
@@ -203,17 +203,18 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
               "Profile",
               <User size={20} color={colors.primary} />
             )}
-            {renderSettingItem(
-              <PenTool size={20} color={colors.textSecondary} />,
-              "Edit Profile",
-              "Update your personal information",
-              () => setShowEditProfile(true)
-            )}
+
             {renderSettingItem(
               <UserCheck size={20} color={colors.textSecondary} />,
               user?.name || "User Name",
               user?.email || "user@example.com",
               () => showToast("Profile info", "info")
+            )}
+            {renderSettingItem(
+              <UserPenIcon size={20} color={colors.textSecondary} />,
+              "Edit Profile",
+              "Update your personal information",
+              () => setShowEditProfile(true)
             )}
           </View>
 
@@ -251,7 +252,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
               <Shield size={20} color={colors.primary} />
             )}
             {renderSettingItem(
-              <Shield size={20} color={colors.textSecondary} />,
+              <Fingerprint size={20} color={colors.textSecondary} />,
               "Change Password",
               "Update your account password",
               () => setShowChangePassword(true)
