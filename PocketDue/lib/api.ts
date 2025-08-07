@@ -7,6 +7,7 @@ import {
   LoginRequest,
   PaymentResponse,
   PaymentsResponse,
+  PaymentSummary,
   RegisterRequest,
   UpdatePaymentRequest,
   UserResponse,
@@ -181,6 +182,14 @@ class ApiService {
     );
     console.log("getPreviousUsers response:", response);
     return response;
+  }
+
+  async getPaymentSummaries(): Promise<
+    ApiResponse<{ summaries: PaymentSummary[] }>
+  > {
+    return this.makeRequest<{ summaries: PaymentSummary[] }>(
+      "/payments/summaries"
+    );
   }
 }
 

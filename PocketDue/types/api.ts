@@ -18,7 +18,8 @@ export interface PaymentsResponse {
 }
 
 export interface PaymentResponse {
-  payment: Payment;
+  payment: Payment | null;
+  deleted?: boolean;
 }
 
 export interface UserResponse {
@@ -51,4 +52,20 @@ export interface UpdatePaymentRequest {
   amount?: number;
   dueDate?: Date;
   description?: string;
+}
+
+export interface PaymentSummary {
+  personName: string;
+  toReceive: number;
+  toPay: number;
+  netTotal: number;
+  payments: Array<{
+    _id: string;
+    type: "to_pay" | "to_receive";
+    amount: number;
+    description?: string;
+    dueDate: Date;
+    status: "paid" | "unpaid" | "received" | "pending";
+    createdAt: Date;
+  }>;
 }

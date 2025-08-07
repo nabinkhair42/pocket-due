@@ -8,7 +8,7 @@ import {
   RefreshControl,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
-import { Settings, Plus } from "lucide-react-native";
+import { Settings, Plus, List, SheetIcon } from "lucide-react-native";
 import { usePayment } from "../hooks/usePayment";
 import { useAuth } from "../hooks/useAuth";
 import { useTheme } from "../contexts/ThemeContext";
@@ -18,10 +18,12 @@ import { PaymentCard } from "../components/PaymentCard";
 import { Tabs } from "../components/Tabs";
 import { AddPaymentDrawer } from "../components/AddPaymentDrawer";
 import { SettingsScreen } from "./SettingsScreen";
+import { SummaryScreen } from "./SummaryScreen";
 import { Button } from "../components/Button";
 import { useToast } from "../contexts/ToastContext";
 import { Payment } from "../types/models";
 import { CreatePaymentRequest } from "../types/api";
+import { AppLogo } from "../components/Icons";
 
 interface HomeScreenProps {
   onLogout: () => void;
@@ -35,6 +37,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onLogout }) => {
   const [drawerVisible, setDrawerVisible] = useState(false);
   const [editingPayment, setEditingPayment] = useState<Payment | null>(null);
   const [showSettings, setShowSettings] = useState(false);
+  const [showSummary, setShowSummary] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(true);
   const { theme } = useTheme();
   const colors = getThemeColors(theme);
@@ -102,7 +105,10 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onLogout }) => {
 
   const handleToggleStatus = async (id: string) => {
     const payment = await togglePaymentStatus(id);
-    if (!payment) {
+    if (payment === null) {
+      // Payment was deleted after being marked as paid/received
+      showToast("Payment completed and removed from list", "success");
+    } else if (!payment) {
       showToast("Failed to toggle payment status", "error");
     }
   };
@@ -184,6 +190,10 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onLogout }) => {
     );
   }
 
+  if (showSummary) {
+    return <SummaryScreen onBack={() => setShowSummary(false)} />;
+  }
+
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <LinearGradient
@@ -191,15 +201,34 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onLogout }) => {
         style={styles.header}
       >
         <View style={styles.headerContent}>
-          <Text style={[styles.title, { color: colors.surface }]}>
-            PocketDue
-          </Text>
-          <TouchableOpacity
-            onPress={() => setShowSettings(true)}
-            style={styles.settingsButton}
+          <View style={{ flexDirection: "row", alignItems: "center" }}>
+            <AppLogo size={32} />
+            <Text style={[styles.title, { color: colors.surface }]}>
+              PocketDue
+            </Text>
+          </View>
+
+          <View
+            style={{
+              flexDirection: "row",
+              justifyContent: "space-between",
+              alignItems: "center",
+            }}
           >
-            <Settings size={24} color={colors.surface} />
-          </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => setShowSummary(true)}
+              style={styles.settingsButton}
+            >
+              <SheetIcon size={24} color={colors.surface} />
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              onPress={() => setShowSettings(true)}
+              style={styles.settingsButton}
+            >
+              <Settings size={24} color={colors.surface} />
+            </TouchableOpacity>
+          </View>
         </View>
       </LinearGradient>
 

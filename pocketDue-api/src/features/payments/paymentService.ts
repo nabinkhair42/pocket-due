@@ -97,7 +97,7 @@ export class PaymentService {
   async togglePaymentStatus(
     userId: string,
     paymentId: string
-  ): Promise<IPayment> {
+  ): Promise<IPayment | null> {
     try {
       const payment = await Payment.findOne({ _id: paymentId, userId });
 
@@ -119,6 +119,16 @@ export class PaymentService {
         userId,
         newStatus: payment.status,
       });
+
+      // If payment is now paid/received, delete it from database
+      if (payment.status === "paid" || payment.status === "received") {
+        await Payment.findByIdAndDelete(paymentId);
+        logger.info("Payment deleted after being marked as paid/received", {
+          paymentId,
+          userId,
+        });
+        return null; // Return null to indicate payment was deleted
+      }
 
       return payment;
     } catch (error) {
@@ -188,12 +198,17 @@ export class PaymentService {
   async getPreviousUsers(userId: string): Promise<string[]> {
     try {
       // Get unique person names from user's payment history
-      const payments = await Payment.find({ userId }).select('personName');
-      
+      const payments = await Payment.find({ userId }).select("personName");
+
       // Extract unique person names and sort them
-      const uniqueNames = [...new Set(payments.map(p => p.personName))].sort();
-      
-      logger.info("Previous users retrieved", { userId, count: uniqueNames.length });
+      const uniqueNames = [
+        ...new Set(payments.map((p) => p.personName)),
+      ].sort();
+
+      logger.info("Previous users retrieved", {
+        userId,
+        count: uniqueNames.length,
+      });
       return uniqueNames;
     } catch (error) {
       logger.error("Error retrieving previous users", { error, userId });

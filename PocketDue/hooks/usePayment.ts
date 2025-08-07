@@ -1,11 +1,17 @@
 import { useState, useCallback } from "react";
 import { apiService } from "../lib/api";
 import { Payment } from "../types/models";
-import { CreatePaymentRequest, UpdatePaymentRequest } from "../types/api";
+import {
+  CreatePaymentRequest,
+  UpdatePaymentRequest,
+  PaymentSummary,
+} from "../types/api";
 
 export const usePayment = () => {
   const [payments, setPayments] = useState<Payment[]>([]);
   const [loading, setLoading] = useState(false);
+  const [summaries, setSummaries] = useState<PaymentSummary[]>([]);
+  const [summariesLoading, setSummariesLoading] = useState(false);
 
   const getPayments = useCallback(async (): Promise<Payment[]> => {
     setLoading(true);
@@ -32,7 +38,7 @@ export const usePayment = () => {
         const result = await apiService.createPayment(data);
         if (result.success && result.data?.payment) {
           setPayments((prev) => [
-            result.data!.payment,
+            result.data!.payment!,
             ...(Array.isArray(prev) ? prev : []),
           ]);
           return result.data.payment;
@@ -53,7 +59,7 @@ export const usePayment = () => {
           setPayments((prev) =>
             Array.isArray(prev)
               ? prev.map((payment) =>
-                  payment._id === id ? result.data!.payment : payment
+                  payment._id === id ? result.data!.payment! : payment
                 )
               : []
           );
@@ -71,15 +77,26 @@ export const usePayment = () => {
     async (id: string): Promise<Payment | null> => {
       try {
         const result = await apiService.togglePaymentStatus(id);
-        if (result.success && result.data?.payment) {
-          setPayments((prev) =>
-            Array.isArray(prev)
-              ? prev.map((payment) =>
-                  payment._id === id ? result.data!.payment : payment
-                )
-              : []
-          );
-          return result.data.payment;
+        if (result.success) {
+          if (result.data?.deleted) {
+            // Payment was deleted after being marked as paid/received
+            setPayments((prev) =>
+              Array.isArray(prev)
+                ? prev.filter((payment) => payment._id !== id)
+                : []
+            );
+            return null;
+          } else if (result.data?.payment) {
+            // Payment status was updated but not deleted
+            setPayments((prev) =>
+              Array.isArray(prev)
+                ? prev.map((payment) =>
+                    payment._id === id ? result.data!.payment! : payment
+                  )
+                : []
+            );
+            return result.data.payment;
+          }
         }
         return null;
       } catch (error) {
@@ -116,10 +133,31 @@ export const usePayment = () => {
     [payments]
   );
 
+  const getPaymentSummaries = useCallback(async (): Promise<
+    PaymentSummary[]
+  > => {
+    setSummariesLoading(true);
+    try {
+      const result = await apiService.getPaymentSummaries();
+      if (result.success && result.data?.summaries) {
+        setSummaries(result.data.summaries);
+        return result.data.summaries;
+      }
+      return [];
+    } catch (error) {
+      return [];
+    } finally {
+      setSummariesLoading(false);
+    }
+  }, []);
+
   return {
     payments,
     loading,
+    summaries,
+    summariesLoading,
     getPayments,
+    getPaymentSummaries,
     createPayment,
     updatePayment,
     togglePaymentStatus,

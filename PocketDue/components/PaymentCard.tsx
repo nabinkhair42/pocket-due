@@ -101,13 +101,28 @@ export const PaymentCard: React.FC<PaymentCardProps> = ({
         ? "mark as pending"
         : "mark as received";
 
-    Alert.alert("Update Status", `Do you want to ${action} this payment?`, [
-      { text: "Cancel", style: "cancel" },
-      {
-        text: "Update",
-        onPress: () => onToggleStatus(payment._id),
-      },
-    ]);
+    Alert.alert(
+      "Update Status",
+      `Do you want to ${action} this payment?${
+        action === "mark as paid" || action === "mark as received"
+          ? "\n\n⚠️ This payment will be permanently removed from your list once completed."
+          : ""
+      }`,
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text:
+            action === "mark as paid" || action === "mark as received"
+              ? "Complete & Remove"
+              : "Update",
+          style:
+            action === "mark as paid" || action === "mark as received"
+              ? "destructive"
+              : "default",
+          onPress: () => onToggleStatus(payment._id),
+        },
+      ]
+    );
   };
 
   const isOverdue = () => {

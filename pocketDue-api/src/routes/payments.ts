@@ -1,7 +1,7 @@
 import { Router, Request, Response, RequestHandler } from "express";
 import { paymentService } from "../features/payments/paymentService";
 import { authenticateToken } from "../middleware/auth";
-import { CreatePaymentRequest, UpdatePaymentRequest } from "../types";
+import { CreatePaymentRequest, Payment, UpdatePaymentRequest } from "../types";
 import {
   validateRequest,
   paymentValidationRules,
@@ -143,11 +143,20 @@ router.patch(
 
     const payment = await paymentService.togglePaymentStatus(userId, id);
 
-    res.json({
-      success: true,
-      message: "Payment status updated successfully",
-      data: { payment },
-    });
+    // If payment is null, it means it was deleted after being marked as paid/received
+    if (payment === null) {
+      res.json({
+        success: true,
+        message: "Payment completed and removed from list",
+        data: { payment: null, deleted: true },
+      });
+    } else {
+      res.json({
+        success: true,
+        message: "Payment status updated successfully",
+        data: { payment, deleted: false },
+      });
+    }
   })
 );
 
@@ -166,6 +175,93 @@ router.delete(
       data: { payment },
     });
   })
+);
+
+// Get payment summaries grouped by person
+router.get(
+  "/summaries",
+  authenticateToken as unknown as RequestHandler,
+  async (req: Request, res: Response) => {
+    try {
+      const userId = (req.user as { id: string }).id;
+
+      const payments = await paymentService.getPayments(userId);
+
+      interface PaymentSummary {
+        personName: string;
+        toReceive: number;
+        toPay: number;
+        netTotal: number;
+        payments: Array<{
+          _id: string;
+          type: "to_pay" | "to_receive";
+          amount: number;
+          description?: string;
+          dueDate: Date;
+          status: "paid" | "unpaid" | "received" | "pending";
+          createdAt: Date;
+        }>;
+      }
+
+      // Group payments by personName and calculate totals
+      const summaries = payments.reduce(
+        (acc: Record<string, PaymentSummary>, payment) => {
+          const personName = payment.personName;
+
+          if (!acc[personName]) {
+            acc[personName] = {
+              personName,
+              toReceive: 0,
+              toPay: 0,
+              netTotal: 0,
+              payments: [],
+            };
+          }
+
+          if (payment.type === "to_receive") {
+            acc[personName].toReceive += payment.amount;
+          } else {
+            acc[personName].toPay += payment.amount;
+          }
+
+          acc[personName].payments.push({
+            _id: (payment as unknown as Payment)._id.toString(),
+            type: payment.type,
+            amount: payment.amount,
+            description: payment.description,
+            dueDate: payment.dueDate,
+            status: payment.status,
+            createdAt: payment.createdAt,
+          });
+
+          return acc;
+        },
+        {}
+      );
+
+      // Calculate net totals and sort by net total
+      const summaryArray = Object.values(summaries)
+        .map((summary) => {
+          summary.netTotal = summary.toReceive - summary.toPay;
+          return summary;
+        })
+        .sort((a, b) => Math.abs(b.netTotal) - Math.abs(a.netTotal));
+
+      res.json({
+        success: true,
+        data: {
+          summaries: summaryArray,
+        },
+      });
+    } catch (error: unknown) {
+      console.error("Error fetching payment summaries:", error);
+      res.status(500).json({
+        success: false,
+        message: "Failed to fetch payment summaries",
+        error: error instanceof Error ? error.message : "Unknown error",
+      });
+    }
+  }
 );
 
 export default router;
