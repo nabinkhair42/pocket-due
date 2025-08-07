@@ -105,7 +105,11 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
       style={[
         styles.settingItem,
         { backgroundColor: colors.surface },
-        danger && { borderLeftColor: colors.error, borderLeftWidth: 3 },
+        danger && {
+          borderColor: colors.error,
+          borderWidth: 1,
+          borderRadius: 12,
+        },
       ]}
       onPress={onPress}
       disabled={!onPress}
@@ -452,7 +456,7 @@ const styles = StyleSheet.create({
     paddingTop: 20,
   },
   section: {
-    marginBottom: 32,
+    marginBottom: 20,
   },
   sectionHeader: {
     flexDirection: "row",
@@ -474,14 +478,7 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     borderRadius: 12,
     marginBottom: 8,
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
+    shadowOpacity: 0,
   },
   settingLeft: {
     flexDirection: "row",

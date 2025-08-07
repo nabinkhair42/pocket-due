@@ -47,12 +47,12 @@ export const PaymentCard: React.FC<PaymentCardProps> = ({
         paid: {
           text: "Paid",
           gradient: colors.gradientSuccess,
-          icon: <Check size={16} color={colors.surface} />,
+          icon: <Check size={12} color={colors.surface} />,
         },
         unpaid: {
           text: "Unpaid",
           gradient: colors.gradientError,
-          icon: <Clock size={16} color={colors.surface} />,
+          icon: <Clock size={12} color={colors.surface} />,
         },
       };
     } else {
@@ -60,12 +60,12 @@ export const PaymentCard: React.FC<PaymentCardProps> = ({
         received: {
           text: "Received",
           gradient: colors.gradientSuccess,
-          icon: <Check size={16} color={colors.surface} />,
+          icon: <Check size={12} color={colors.surface} />,
         },
         pending: {
           text: "Pending",
           gradient: colors.gradientError,
-          icon: <Clock size={16} color={colors.surface} />,
+          icon: <Clock size={12} color={colors.surface} />,
         },
       };
     }
@@ -124,13 +124,25 @@ export const PaymentCard: React.FC<PaymentCardProps> = ({
   const getBorderColor = () => {
     if (payment.status === "paid" || payment.status === "received") {
       return colors.success;
-    } else {
+    } else if (isOverdue()) {
       return colors.error;
+    } else {
+      return colors.warning;
+    }
+  };
+
+  const getStatusColor = () => {
+    if (payment.status === "paid" || payment.status === "received") {
+      return colors.success;
+    } else if (isOverdue()) {
+      return colors.error;
+    } else {
+      return colors.warning;
     }
   };
 
   return (
-    <View
+    <TouchableOpacity
       style={[
         styles.card,
         {
@@ -140,151 +152,133 @@ export const PaymentCard: React.FC<PaymentCardProps> = ({
           borderColor: getBorderColor(),
         },
       ]}
+      onPress={handleStatusToggle}
+      activeOpacity={0.7}
     >
-      <View style={styles.header}>
-        <View style={styles.titleSection}>
+      <View style={styles.mainContent}>
+        <View style={styles.leftSection}>
           <Text style={[styles.personName, { color: colors.textPrimary }]}>
             {payment.personName}
           </Text>
+          <Text style={[styles.dueDate, { color: colors.textSecondary }]}>
+            {formatDate(payment.dueDate)}
+            {isOverdue() && (
+              <Text style={[styles.overdueText, { color: colors.error }]}>
+                {" "}
+                • Overdue
+              </Text>
+            )}
+          </Text>
+        </View>
+
+        <View style={styles.rightSection}>
           <Text style={[styles.amount, { color: colors.textPrimary }]}>
             {formatAmount(payment.amount)}
           </Text>
-        </View>
-        <View style={styles.actions}>
-          <TouchableOpacity
-            onPress={() => onEdit(payment)}
+          <View
             style={[
-              styles.actionButton,
-              { backgroundColor: colors.surfaceSecondary },
+              styles.statusBadge,
+              {
+                backgroundColor: getStatusColor(),
+              },
             ]}
           >
-            <Edit size={16} color={colors.textSecondary} />
-          </TouchableOpacity>
-          <TouchableOpacity
-            onPress={handleDelete}
-            style={[
-              styles.actionButton,
-              { backgroundColor: colors.surfaceSecondary },
-            ]}
-          >
-            <Trash2 size={16} color={colors.error} />
-          </TouchableOpacity>
-        </View>
-      </View>
-
-      <View style={styles.details}>
-        <Text style={[styles.dueDate, { color: colors.textSecondary }]}>
-          Due: {formatDate(payment.dueDate)}
-          {isOverdue() && (
-            <Text style={[styles.overdueText, { color: colors.error }]}>
-              {" "}
-              (Overdue)
-            </Text>
-          )}
-        </Text>
-        {payment.description && (
-          <Text style={[styles.description, { color: colors.textTertiary }]}>
-            {payment.description}
-          </Text>
-        )}
-      </View>
-
-      <TouchableOpacity
-        onPress={handleStatusToggle}
-        style={styles.statusContainer}
-      >
-        <LinearGradient
-          colors={
-            Array.isArray(currentStatus?.gradient)
-              ? (currentStatus.gradient as [string, string])
-              : ["#ef4444", "#dc2626"]
-          }
-          style={styles.statusGradient}
-        >
-          <View style={styles.statusContent}>
             {currentStatus?.icon}
             <Text style={[styles.statusText, { color: colors.surface }]}>
               {currentStatus?.text || "Unknown"}
             </Text>
           </View>
-        </LinearGradient>
-      </TouchableOpacity>
-    </View>
+        </View>
+      </View>
+
+      {payment.description && (
+        <Text style={[styles.description, { color: colors.textTertiary }]}>
+          {payment.description}
+        </Text>
+      )}
+
+      <View style={styles.actions}>
+        <TouchableOpacity
+          onPress={() => onEdit(payment)}
+          style={styles.actionButton}
+        >
+          <Edit size={14} color={colors.textSecondary} />
+        </TouchableOpacity>
+        <TouchableOpacity onPress={handleDelete} style={styles.actionButton}>
+          <Trash2 size={14} color={colors.error} />
+        </TouchableOpacity>
+      </View>
+    </TouchableOpacity>
   );
 };
 
 const styles = StyleSheet.create({
   card: {
-    borderRadius: 16,
-    padding: 20,
-    marginBottom: 16,
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 12,
     shadowOffset: {
       width: 0,
-      height: 4,
+      height: 1,
     },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
+    shadowOpacity: 0.06,
+    shadowRadius: 3,
+    elevation: 1,
+    borderWidth: 1,
   },
-  header: {
+  mainContent: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "flex-start",
-    marginBottom: 12,
+    marginBottom: 8,
   },
-  titleSection: {
+  leftSection: {
     flex: 1,
+    marginRight: 12,
+  },
+  rightSection: {
+    alignItems: "flex-end",
   },
   personName: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: "600",
-    marginBottom: 4,
+    marginBottom: 2,
   },
   amount: {
-    fontSize: 24,
+    fontSize: 18,
     fontWeight: "bold",
-  },
-  actions: {
-    flexDirection: "row",
-    gap: 8,
-  },
-  actionButton: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  details: {
-    marginBottom: 16,
+    marginBottom: 4,
   },
   dueDate: {
-    fontSize: 14,
-    marginBottom: 4,
+    fontSize: 13,
   },
   overdueText: {
     fontWeight: "600",
   },
   description: {
-    fontSize: 14,
-    lineHeight: 20,
+    fontSize: 13,
+    lineHeight: 18,
+    marginBottom: 8,
   },
-  statusContainer: {
-    alignSelf: "flex-start",
-  },
-  statusGradient: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-  },
-  statusContent: {
+  statusBadge: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 6,
+    paddingHorizontal: 6,
+    paddingVertical: 3,
+    borderRadius: 8,
+    gap: 3,
   },
   statusText: {
-    fontSize: 12,
+    fontSize: 10,
     fontWeight: "600",
     textTransform: "uppercase",
+  },
+  actions: {
+    flexDirection: "row",
+    justifyContent: "flex-end",
+    gap: 12,
+  },
+  actionButton: {
+    padding: 4,
   },
 });

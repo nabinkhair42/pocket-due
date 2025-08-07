@@ -12,6 +12,7 @@ import { Settings, Plus } from "lucide-react-native";
 import { usePayment } from "../hooks/usePayment";
 import { useAuth } from "../hooks/useAuth";
 import { useTheme } from "../contexts/ThemeContext";
+import { apiService } from "../lib/api";
 import { getThemeColors } from "../lib/theme";
 import { PaymentCard } from "../components/PaymentCard";
 import { Tabs } from "../components/Tabs";
@@ -59,7 +60,17 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onLogout }) => {
 
   useEffect(() => {
     loadPayments();
+    // Preload previous users for faster dropdown access
+    preloadPreviousUsers();
   }, []);
+
+  const preloadPreviousUsers = async () => {
+    try {
+      await apiService.getPreviousUsers();
+    } catch (error) {
+      console.error("Error preloading previous users:", error);
+    }
+  };
 
   const loadPayments = async () => {
     try {

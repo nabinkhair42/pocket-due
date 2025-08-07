@@ -26,6 +26,7 @@ const getEnvironmentConfig = (): EnvironmentConfig => {
       "http://localhost:3000",
       "http://localhost:19006",
       "exp://localhost:19000",
+      "http://localhost:8081",
       "pocketdue://",
     ],
   };

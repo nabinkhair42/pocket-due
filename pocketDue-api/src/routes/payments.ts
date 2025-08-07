@@ -74,6 +74,21 @@ router.get(
   })
 );
 
+// Get previous users for dropdown
+router.get(
+  "/previous-users",
+  handleAsync(async (req: Request, res: Response) => {
+    const userId = (req as unknown as { user: { _id: string } }).user._id;
+    const previousUsers = await paymentService.getPreviousUsers(userId);
+
+    res.json({
+      success: true,
+      message: "Previous users retrieved successfully",
+      data: { previousUsers },
+    });
+  })
+);
+
 // Create new payment
 router.post(
   "/",

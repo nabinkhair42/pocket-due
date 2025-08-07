@@ -184,6 +184,22 @@ export class PaymentService {
       throw error;
     }
   }
+
+  async getPreviousUsers(userId: string): Promise<string[]> {
+    try {
+      // Get unique person names from user's payment history
+      const payments = await Payment.find({ userId }).select('personName');
+      
+      // Extract unique person names and sort them
+      const uniqueNames = [...new Set(payments.map(p => p.personName))].sort();
+      
+      logger.info("Previous users retrieved", { userId, count: uniqueNames.length });
+      return uniqueNames;
+    } catch (error) {
+      logger.error("Error retrieving previous users", { error, userId });
+      throw error;
+    }
+  }
 }
 
 export const paymentService = new PaymentService();

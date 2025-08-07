@@ -180,6 +180,10 @@ class ApiService {
       method: "DELETE",
     });
   }
+
+  async getPreviousUsers(): Promise<ApiResponse<{ previousUsers: string[] }>> {
+    return this.makeRequest("/payments/previous-users");
+  }
 }
 
 export const apiService = new ApiService();

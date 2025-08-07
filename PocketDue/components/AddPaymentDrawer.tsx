@@ -15,6 +15,8 @@ import { getThemeColors } from "../lib/theme";
 import { CreatePaymentRequest } from "../types/api";
 import { Payment } from "../types/models";
 import { Button } from "./Button";
+import { Dropdown } from "./Dropdown";
+import { apiService } from "../lib/api";
 
 interface AddPaymentDrawerProps {
   visible: boolean;
@@ -39,6 +41,8 @@ export const AddPaymentDrawer: React.FC<AddPaymentDrawerProps> = ({
     description: "",
   });
   const [showDatePicker, setShowDatePicker] = useState(false);
+  const [previousUsers, setPreviousUsers] = useState<string[]>([]);
+  const [loadingUsers, setLoadingUsers] = useState(false);
 
   useEffect(() => {
     if (editingPayment) {
@@ -59,6 +63,27 @@ export const AddPaymentDrawer: React.FC<AddPaymentDrawerProps> = ({
       });
     }
   }, [editingPayment, visible]);
+
+  // Load previous users when drawer opens
+  useEffect(() => {
+    if (visible && !editingPayment) {
+      loadPreviousUsers();
+    }
+  }, [visible, editingPayment]);
+
+  const loadPreviousUsers = async () => {
+    try {
+      setLoadingUsers(true);
+      const response = await apiService.getPreviousUsers();
+      if (response.success && response.data?.previousUsers) {
+        setPreviousUsers(response.data.previousUsers);
+      }
+    } catch (error) {
+      console.error("Error loading previous users:", error);
+    } finally {
+      setLoadingUsers(false);
+    }
+  };
 
   const handleSubmit = () => {
     if (!formData.personName.trim()) {
@@ -180,14 +205,47 @@ export const AddPaymentDrawer: React.FC<AddPaymentDrawerProps> = ({
             <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>
               Payment Details
             </Text>
-            {renderInputField(
-              <User size={20} color={colors.textSecondary} />,
-              formData.type === "to_pay"
-                ? "Who to pay?"
-                : "Who to receive from?",
-              formData.personName,
-              (text) => setFormData({ ...formData, personName: text })
-            )}
+
+            {/* Person Name Field with Dropdown */}
+            <View style={styles.personNameContainer}>
+              <View
+                style={[
+                  styles.inputContainer,
+                  { backgroundColor: colors.surface },
+                ]}
+              >
+                <View style={styles.inputIcon}>
+                  <User size={20} color={colors.textSecondary} />
+                </View>
+                <TextInput
+                  style={[styles.input, { color: colors.textPrimary }]}
+                  placeholder={
+                    formData.type === "to_pay"
+                      ? "Who to pay?"
+                      : "Who to receive from?"
+                  }
+                  placeholderTextColor={colors.textTertiary}
+                  value={formData.personName}
+                  onChangeText={(text) =>
+                    setFormData({ ...formData, personName: text })
+                  }
+                />
+              </View>
+
+              <View style={styles.dropdownContainer}>
+                <Dropdown
+                  value=""
+                  onValueChange={(value) =>
+                    setFormData({ ...formData, personName: value })
+                  }
+                  placeholder={
+                    loadingUsers ? "Loading..." : "Select from previous users"
+                  }
+                  options={previousUsers}
+                  disabled={loadingUsers}
+                />
+              </View>
+            </View>
             {renderInputField(
               <DollarSign size={20} color={colors.textSecondary} />,
               "Amount",
@@ -196,6 +254,68 @@ export const AddPaymentDrawer: React.FC<AddPaymentDrawerProps> = ({
                 setFormData({ ...formData, amount: parseFloat(text) || 0 }),
               "numeric"
             )}
+
+            {/* Quick Amount Selection */}
+            <View style={styles.quickAmountContainer}>
+              <Text
+                style={[
+                  styles.quickAmountLabel,
+                  { color: colors.textSecondary },
+                ]}
+              >
+                Quick select amount:
+              </Text>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.quickAmountScroll}
+              >
+                {[20, 50, 80, 100, 150, 200, 500].map((amount) => (
+                  <TouchableOpacity
+                    key={amount}
+                    style={[
+                      styles.quickAmountBadge,
+                      {
+                        backgroundColor:
+                          formData.amount === amount
+                            ? colors.primary
+                            : colors.surfaceSecondary,
+                        borderWidth: formData.amount === amount ? 0 : 1,
+                        borderColor:
+                          formData.amount === amount
+                            ? "transparent"
+                            : colors.border,
+                      },
+                    ]}
+                    onPress={() => setFormData({ ...formData, amount })}
+                  >
+                    <Text
+                      style={[
+                        styles.quickAmountText,
+                        {
+                          color:
+                            formData.amount === amount
+                              ? colors.surface
+                              : colors.textSecondary,
+                        },
+                      ]}
+                    >
+                      ₨{amount}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            </View>
+
+            {renderInputField(
+              <FileText size={20} color={colors.textSecondary} />,
+              "Description (optional)",
+              formData.description || "",
+              (text) => setFormData({ ...formData, description: text }),
+              "default",
+              true
+            )}
+
             <TouchableOpacity
               style={[
                 styles.inputContainer,
@@ -210,14 +330,6 @@ export const AddPaymentDrawer: React.FC<AddPaymentDrawerProps> = ({
                 {formatDate(formData.dueDate)}
               </Text>
             </TouchableOpacity>
-            {renderInputField(
-              <FileText size={20} color={colors.textSecondary} />,
-              "Description (optional)",
-              formData.description || "",
-              (text) => setFormData({ ...formData, description: text }),
-              "default",
-              true
-            )}
           </View>
         </ScrollView>
 
@@ -336,6 +448,41 @@ const styles = StyleSheet.create({
   },
   submitText: {
     fontSize: 16,
+    fontWeight: "600",
+  },
+  personNameContainer: {
+    marginBottom: 16,
+  },
+  dropdownContainer: {
+    marginTop: 8,
+    marginBottom: 16,
+  },
+  quickAmountContainer: {
+    marginBottom: 16,
+  },
+  quickAmountLabel: {
+    fontSize: 14,
+    fontWeight: "500",
+    marginBottom: 8,
+  },
+  quickAmountScroll: {
+    paddingRight: 20,
+  },
+  quickAmountBadge: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 12,
+    marginRight: 8,
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  quickAmountText: {
+    fontSize: 14,
     fontWeight: "600",
   },
 });
