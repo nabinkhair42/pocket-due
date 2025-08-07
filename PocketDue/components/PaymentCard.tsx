@@ -38,7 +38,7 @@ export const PaymentCard: React.FC<PaymentCardProps> = ({
   };
 
   const formatAmount = (amount: number) => {
-    return `$${amount.toFixed(2)}`;
+    return `₨${amount.toFixed(2)}`;
   };
 
   const getStatusInfo = () => {
@@ -121,6 +121,14 @@ export const PaymentCard: React.FC<PaymentCardProps> = ({
     );
   };
 
+  const getBorderColor = () => {
+    if (payment.status === "paid" || payment.status === "received") {
+      return colors.success;
+    } else {
+      return colors.error;
+    }
+  };
+
   return (
     <View
       style={[
@@ -128,8 +136,8 @@ export const PaymentCard: React.FC<PaymentCardProps> = ({
         {
           backgroundColor: colors.cardBackground,
           shadowColor: colors.cardShadow,
-          borderLeftWidth: 4,
-          borderLeftColor: isOverdue() ? colors.error : "transparent",
+          borderWidth: 1,
+          borderColor: getBorderColor(),
         },
       ]}
     >

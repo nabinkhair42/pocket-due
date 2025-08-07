@@ -1,21 +1,20 @@
+import { ChevronLeft, Lock, Mail, User } from "lucide-react-native";
 import React, { useState } from "react";
 import {
-  View,
-  Text,
-  TouchableOpacity,
-  StyleSheet,
   ActivityIndicator,
+  StyleSheet,
+  Text,
   TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
-import { LinearGradient } from "expo-linear-gradient";
-import { useAuth } from "../hooks/useAuth";
-import { useTheme } from "../contexts/ThemeContext";
-import { getThemeColors } from "../lib/theme";
-import { Mail, Lock, User, ChevronLeft } from "lucide-react-native";
 import { Button } from "../components/Button";
 import { AppLogo } from "../components/Icons";
+import { useTheme } from "../contexts/ThemeContext";
 import { useToast } from "../contexts/ToastContext";
-import { RegisterRequest, LoginRequest } from "../types/api";
+import { useAuth } from "../hooks/useAuth";
+import { getThemeColors } from "../lib/theme";
+import { LoginRequest, RegisterRequest } from "../types/api";
 
 interface AuthScreenProps {
   onAuthSuccess: () => void;

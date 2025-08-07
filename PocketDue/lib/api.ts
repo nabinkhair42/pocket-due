@@ -118,6 +118,33 @@ class ApiService {
     return this.makeRequest<UserResponse>("/auth/me");
   }
 
+  async updateProfile(data: {
+    name?: string;
+    email?: string;
+  }): Promise<ApiResponse<UserResponse>> {
+    return this.makeRequest<UserResponse>("/auth/profile", {
+      method: "PUT",
+      body: JSON.stringify(data),
+    });
+  }
+
+  async changePassword(data: {
+    currentPassword: string;
+    newPassword: string;
+  }): Promise<ApiResponse> {
+    return this.makeRequest("/auth/password", {
+      method: "PUT",
+      body: JSON.stringify(data),
+    });
+  }
+
+  async deleteAccount(data: { password: string }): Promise<ApiResponse> {
+    return this.makeRequest("/auth/account", {
+      method: "DELETE",
+      body: JSON.stringify(data),
+    });
+  }
+
   // Payment methods
   async getPayments(): Promise<ApiResponse<PaymentsResponse>> {
     return this.makeRequest<PaymentsResponse>("/payments");
