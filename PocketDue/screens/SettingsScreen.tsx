@@ -550,6 +550,7 @@ const styles = StyleSheet.create({
   // Modal styles
   modalContainer: {
     flex: 1,
+    backgroundColor: "transparent",
   },
   modalHeader: {
     flexDirection: "row",

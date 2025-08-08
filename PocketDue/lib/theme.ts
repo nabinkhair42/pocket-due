@@ -78,6 +78,7 @@ export const themeColors = {
     gradientSecondary: ["#10b981", "#059669"],
     gradientSuccess: ["#10b981", "#059669"],
     gradientError: ["#ef4444", "#dc2626"],
+    
 
     // Overlay colors
     overlay: "rgba(0, 0, 0, 0.3)",

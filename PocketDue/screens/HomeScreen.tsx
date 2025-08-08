@@ -1,29 +1,28 @@
-import React, { useState, useEffect } from "react";
-import {
-  View,
-  Text,
-  FlatList,
-  TouchableOpacity,
-  StyleSheet,
-  RefreshControl,
-} from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
-import { Settings, Plus, List, SheetIcon } from "lucide-react-native";
-import { usePayment } from "../hooks/usePayment";
-import { useAuth } from "../hooks/useAuth";
-import { useTheme } from "../contexts/ThemeContext";
-import { apiService } from "../lib/api";
-import { getThemeColors } from "../lib/theme";
+import { Plus, Settings, SheetIcon, WalletCards } from "lucide-react-native";
+import React, { useEffect, useState } from "react";
+import {
+  FlatList,
+  RefreshControl,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import { AddPaymentDrawer } from "../components/AddPaymentDrawer";
+import { AppLogo } from "../components/Icons";
 import { PaymentCard } from "../components/PaymentCard";
 import { Tabs } from "../components/Tabs";
-import { AddPaymentDrawer } from "../components/AddPaymentDrawer";
+import { useTheme } from "../contexts/ThemeContext";
+import { useToast } from "../contexts/ToastContext";
+import { useAuth } from "../hooks/useAuth";
+import { usePayment } from "../hooks/usePayment";
+import { apiService } from "../lib/api";
+import { getThemeColors } from "../lib/theme";
+import { CreatePaymentRequest } from "../types/api";
+import { Payment } from "../types/models";
 import { SettingsScreen } from "./SettingsScreen";
 import { SummaryScreen } from "./SummaryScreen";
-import { Button } from "../components/Button";
-import { useToast } from "../contexts/ToastContext";
-import { Payment } from "../types/models";
-import { CreatePaymentRequest } from "../types/api";
-import { AppLogo } from "../components/Icons";
 
 interface HomeScreenProps {
   onLogout: () => void;
@@ -156,6 +155,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onLogout }) => {
 
   const renderEmptyState = () => (
     <View style={styles.emptyContainer}>
+      <WalletCards size={48} color={colors.textSecondary} />
       <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
         No{" "}
         {currentTab === "to_pay" ? "payments to make" : "payments to receive"}
@@ -313,7 +313,7 @@ const styles = StyleSheet.create({
   listContainer: {
     paddingVertical: 20,
   },
-  emptyContainer: {
+   emptyContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",

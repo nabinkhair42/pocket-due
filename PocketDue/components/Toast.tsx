@@ -1,17 +1,14 @@
+import { Check, Info, XCircle } from "lucide-react-native";
 import React, { useEffect, useRef } from "react";
 import {
-  View,
-  Text,
-  StyleSheet,
   Animated,
-  TouchableOpacity,
-  Dimensions,
+  StyleSheet,
+  Text,
+  View
 } from "react-native";
-import { Check, XCircle, Info, X } from "lucide-react-native";
 import { useTheme } from "../contexts/ThemeContext";
 import { getThemeColors } from "../lib/theme";
 
-const { width } = Dimensions.get("window");
 
 export type ToastVariant = "success" | "error" | "info";
 
@@ -134,9 +131,6 @@ export const Toast: React.FC<ToastProps> = ({
               {message}
             </Text>
           </View>
-          <TouchableOpacity onPress={hideToast} style={styles.closeButton}>
-            <X size={16} color={colors.surface} />
-          </TouchableOpacity>
         </View>
       </View>
     </Animated.View>
@@ -155,13 +149,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 12,
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 8,
+    
   },
   content: {
     flexDirection: "row",

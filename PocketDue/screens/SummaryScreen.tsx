@@ -16,6 +16,8 @@ import {
   DollarSign,
   TrendingUp,
   TrendingDown,
+  CardSim,
+  SheetIcon,
 } from "lucide-react-native";
 import { usePayment } from "../hooks/usePayment";
 import { useTheme } from "../contexts/ThemeContext";
@@ -372,7 +374,7 @@ export const SummaryScreen: React.FC<SummaryScreenProps> = ({ onBack }) => {
 
   const renderEmptyState = () => (
     <View style={styles.emptyContainer}>
-      <DollarSign size={48} color={colors.textTertiary} />
+      <SheetIcon size={48} color={colors.textTertiary} />
       <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
         No payment summaries
       </Text>
