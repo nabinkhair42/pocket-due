@@ -13,7 +13,7 @@ import {
   UserResponse,
 } from "../types/api";
 
-const API_BASE_URL = "http://192.168.1.66:3000/api";
+const API_BASE_URL = "https://pocket-due.vercel.app/api";
 
 class ApiService {
   private async getToken(): Promise<string | null> {
