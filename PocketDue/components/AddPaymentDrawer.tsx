@@ -1,25 +1,23 @@
 import DateTimePicker from "@react-native-community/datetimepicker";
-import { Calendar, DollarSign, FileText, User, X } from "lucide-react-native";
-import React, { useEffect, useState, useRef } from "react";
+import { Calendar, ChevronDown, ChevronUp, DollarSign, FileText, User, X } from "lucide-react-native";
+import React, { useEffect, useRef, useState } from "react";
 import {
+  Animated,
+  Dimensions,
   Modal,
   ScrollView,
   StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
-  View,
-  FlatList,
-  Animated,
-  Dimensions,
+  View
 } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "../contexts/ThemeContext";
+import { apiService } from "../lib/api";
 import { getThemeColors } from "../lib/theme";
 import { CreatePaymentRequest } from "../types/api";
 import { Payment } from "../types/models";
 import { Button } from "./Button";
-import { apiService } from "../lib/api";
 
 interface AddPaymentDrawerProps {
   visible: boolean;
@@ -285,11 +283,11 @@ export const AddPaymentDrawer: React.FC<AddPaymentDrawerProps> = ({
                     onPress={() => setIsDropdownOpen(!isDropdownOpen)}
                     style={styles.dropdownToggle}
                   >
-                    <Ionicons
-                      name={isDropdownOpen ? "chevron-up" : "chevron-down"}
-                      size={20}
-                      color={colors.textSecondary}
-                    />
+                    {isDropdownOpen ? (
+                      <ChevronUp size={20} color={colors.textSecondary} />
+                    ) : (
+                      <ChevronDown size={20} color={colors.textSecondary} />
+                    )}
                   </TouchableOpacity>
                 )}
               </View>
@@ -532,14 +530,7 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     marginBottom: 16,
     gap: 12,
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
+    
   },
   inputIcon: {
     justifyContent: "center",
@@ -581,13 +572,6 @@ const styles = StyleSheet.create({
     maxHeight: 250,
     borderRadius: 12,
     borderWidth: 1,
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 8,
   },
   inlineDropdown: {
     position: "absolute",
@@ -597,14 +581,9 @@ const styles = StyleSheet.create({
     maxHeight: 200,
     borderRadius: 8,
     borderWidth: 1,
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 4,
     zIndex: 1000,
+    overflow: "hidden",
+    shadowColor: "#000",
   },
   searchContainer: {
     flexDirection: "row",
@@ -654,13 +633,6 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     borderRadius: 12,
     marginRight: 8,
-    shadowOffset: {
-      width: 0,
-      height: 1,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 1,
   },
   quickAmountText: {
     fontSize: 14,

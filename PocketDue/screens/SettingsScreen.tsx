@@ -7,6 +7,7 @@ import {
   Fingerprint,
   HelpCircle,
   Info,
+  Lock,
   LogOut,
   Moon,
   Settings as SettingsIcon,
@@ -15,7 +16,7 @@ import {
   Trash2,
   User,
   UserCheck,
-  UserPenIcon,
+  UserPenIcon
 } from "lucide-react-native";
 import React, { useState } from "react";
 import {
@@ -375,7 +376,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
                 ]}
               >
                 <View style={styles.modalInputIcon}>
-                  <Eye size={20} color={colors.textSecondary} />
+                  <Lock size={20} color={colors.textSecondary} />
                 </View>
                 <TextInput
                   style={[styles.modalInput, { color: colors.textPrimary }]}
@@ -555,15 +556,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingHorizontal: 20,
     paddingTop: 50,
-    paddingBottom: 20,
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
+    paddingBottom: 20
   },
   modalCloseButton: {
     padding: 8,
@@ -597,15 +590,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 16,
     marginTop: 12,
-    gap: 12,
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
+    gap: 12
   },
   modalInputIcon: {
     justifyContent: "center",

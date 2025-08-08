@@ -316,7 +316,7 @@ export const SummaryScreen: React.FC<SummaryScreenProps> = ({ onBack }) => {
   };
 
   const formatAmount = (amount: number) => {
-    return `₨${amount.toLocaleString()}`;
+    return `₨ ${amount.toLocaleString()}`;
   };
 
   const renderSummaryCard = ({ item }: { item: PaymentSummary }) => (
@@ -339,7 +339,6 @@ export const SummaryScreen: React.FC<SummaryScreenProps> = ({ onBack }) => {
             },
           ]}
         >
-          {item.netTotal >= 0 ? "+" : ""}
           {formatAmount(item.netTotal)}
         </Text>
       </View>
@@ -474,14 +473,6 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 16,
     marginBottom: 16,
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
   },
   cardHeader: {
     flexDirection: "row",
@@ -565,14 +556,6 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 20,
     marginBottom: 16,
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
   },
   summaryTitle: {
     fontSize: 16,
@@ -602,14 +585,6 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 16,
     marginBottom: 20,
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
   },
   calculationTitle: {
     fontSize: 16,
@@ -639,14 +614,6 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     padding: 12,
     marginBottom: 8,
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 1,
-    },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 1,
   },
   paymentHeader: {
     flexDirection: "row",
