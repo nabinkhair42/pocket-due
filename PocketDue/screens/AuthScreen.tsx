@@ -1,4 +1,4 @@
-import { ChevronLeft, Lock, Mail, User } from "lucide-react-native";
+import { ChevronLeft, ChevronRight, Lock, Mail, User } from "lucide-react-native";
 import React, { useState } from "react";
 import {
   ActivityIndicator,
@@ -90,15 +90,15 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthSuccess }) => {
 
       <View style={styles.content}>
         <View>
-          <TouchableOpacity
+          <Button
+            icon={<ChevronRight size={20} color={colors.surface} />}
+            variant="primary"
             onPress={() => setShowEmailForm(true)}
-            style={[styles.primaryButton, { backgroundColor: colors.primary }]}
           >
-            <Mail size={20} color={colors.surface} />
             <Text style={[styles.buttonText, { color: colors.surface }]}>
-              Continue with Email
+              Get Started
             </Text>
-          </TouchableOpacity>
+          </Button>
         </View>
       </View>
     </View>

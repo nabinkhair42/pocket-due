@@ -111,8 +111,8 @@ export const Button = ({
       disabled={disabled}
       activeOpacity={0.8}
     >
-      {icon && <View>{icon}</View>}
       <Text style={textStyle}>{children}</Text>
+      {icon && <View>{icon}</View>}
     </TouchableOpacity>
   );
 };
