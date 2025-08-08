@@ -29,6 +29,7 @@
   <img src="assets/add-payment-dropdown.png" alt="Payment Type Dropdown" width="250" style="display: inline-block; margin-right: 10px;"/>
   <img src="assets/payment-summary.png" alt="Payment Summary" width="250" style="display: inline-block; margin-right: 10px;"/>
   <img src="assets/user-summary.png" alt="User Summary Screen" width="250" style="display: inline-block;"/>
+  <img src="assets/settings.png" alt="User Settings" width="250" style="display: inline-block;"/>
 </div>
 
 ### Key Features Showcase

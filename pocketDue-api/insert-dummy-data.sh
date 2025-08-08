@@ -8,7 +8,7 @@ BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 # API base URL
-API_URL="http://localhost:3000/api"
+API_URL="https://pocket-due.vercel.app/api"
 
 echo -e "${BLUE}🚀 PocketDue Dummy Data Insertion Script${NC}"
 echo -e "${BLUE}==========================================${NC}\n"
