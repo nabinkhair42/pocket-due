@@ -1,29 +1,26 @@
-import React, { useState, useEffect } from "react";
-import {
-  View,
-  Text,
-  FlatList,
-  TouchableOpacity,
-  StyleSheet,
-  RefreshControl,
-  Modal,
-  ScrollView,
-} from "react-native";
-import { LinearGradient } from "expo-linear-gradient";
 import {
   ChevronLeft,
-  User,
-  DollarSign,
-  TrendingUp,
-  TrendingDown,
-  CardSim,
-  SheetIcon,
+  BarChart3,
 } from "lucide-react-native";
-import { usePayment } from "../hooks/usePayment";
+import React, { useEffect, useState } from "react";
+import {
+  FlatList,
+  Modal,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+  StatusBar,
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { SummaryCardSkeleton } from "../components/SummaryCardSkeleton";
 import { useTheme } from "../contexts/ThemeContext";
-import { getThemeColors } from "../lib/theme";
-import { PaymentSummary } from "../types/api";
 import { useToast } from "../contexts/ToastContext";
+import { usePayment } from "../hooks/usePayment";
+import { getThemeColors, spacing, radius, typography, shadows } from "../lib/theme";
+import { PaymentSummary } from "../types/api";
 
 interface SummaryScreenProps {
   onBack: () => void;
@@ -49,39 +46,23 @@ const SummaryDetailModal: React.FC<SummaryDetailModalProps> = ({
     return new Date(date).toLocaleDateString("en-US", {
       month: "short",
       day: "numeric",
-      year: "numeric",
     });
   };
 
   const formatAmount = (amount: number) => {
-    return `₨ ${amount.toLocaleString()}`;
+    return `Rs ${amount.toLocaleString()}`;
   };
 
-  const getStatusColor = (status: string) => {
+  const getStatusConfig = (status: string) => {
     switch (status) {
       case "paid":
       case "received":
-        return colors.success;
+        return { color: colors.success, bg: colors.successLight, text: status === "paid" ? "Paid" : "Received" };
       case "unpaid":
       case "pending":
-        return colors.warning;
+        return { color: colors.warning, bg: colors.warningLight, text: status === "unpaid" ? "Unpaid" : "Pending" };
       default:
-        return colors.textSecondary;
-    }
-  };
-
-  const getStatusText = (status: string) => {
-    switch (status) {
-      case "paid":
-        return "Paid";
-      case "received":
-        return "Received";
-      case "unpaid":
-        return "Unpaid";
-      case "pending":
-        return "Pending";
-      default:
-        return status;
+        return { color: colors.textSecondary, bg: colors.surfaceSecondary, text: status };
     }
   };
 
@@ -92,66 +73,44 @@ const SummaryDetailModal: React.FC<SummaryDetailModalProps> = ({
       presentationStyle="pageSheet"
       onRequestClose={onClose}
     >
-      <View
-        style={[styles.modalContainer, { backgroundColor: colors.background }]}
-      >
-        <View style={styles.modalHeader}>
-          <TouchableOpacity onPress={onClose} style={styles.backButton}>
-            <ChevronLeft size={24} color={colors.textPrimary} />
+      <SafeAreaView style={[styles.modalContainer, { backgroundColor: colors.background }]}>
+        <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
+          <TouchableOpacity
+            onPress={onClose}
+            style={[styles.backButton, { backgroundColor: colors.surfaceSecondary }]}
+          >
+            <ChevronLeft size={20} color={colors.textPrimary} />
           </TouchableOpacity>
           <Text style={[styles.modalTitle, { color: colors.textPrimary }]}>
             {summary.personName}
           </Text>
+          <View style={styles.headerSpacer} />
         </View>
 
-        <ScrollView
-          style={styles.modalContent}
-          showsVerticalScrollIndicator={false}
-        >
-          {/* Summary Card */}
-          <View
-            style={[
-              styles.modalSummaryCard,
-              { backgroundColor: colors.surface },
-            ]}
-          >
-            <Text style={[styles.summaryTitle, { color: colors.textPrimary }]}>
+        <ScrollView style={styles.modalContent} showsVerticalScrollIndicator={false}>
+          <View style={[styles.summaryCard, { backgroundColor: colors.surface, borderColor: colors.cardBorder }]}>
+            <Text style={[styles.summaryLabel, { color: colors.textSecondary }]}>
               Net Balance
             </Text>
             <Text
               style={[
                 styles.netTotal,
-                {
-                  color: summary.netTotal >= 0 ? colors.success : colors.error,
-                },
+                { color: summary.netTotal >= 0 ? colors.success : colors.error },
               ]}
             >
-              {summary.netTotal >= 0 ? "+" : ""}
-              {formatAmount(summary.netTotal)}
+              {summary.netTotal >= 0 ? "+" : ""}{formatAmount(summary.netTotal)}
             </Text>
             <View style={styles.summaryBreakdown}>
               <View style={styles.breakdownItem}>
-                <Text
-                  style={[
-                    styles.breakdownLabel,
-                    { color: colors.textSecondary },
-                  ]}
-                >
+                <Text style={[styles.breakdownLabel, { color: colors.textSecondary }]}>
                   To Receive
                 </Text>
-                <Text
-                  style={[styles.breakdownAmount, { color: colors.success }]}
-                >
+                <Text style={[styles.breakdownAmount, { color: colors.success }]}>
                   +{formatAmount(summary.toReceive)}
                 </Text>
               </View>
               <View style={styles.breakdownItem}>
-                <Text
-                  style={[
-                    styles.breakdownLabel,
-                    { color: colors.textSecondary },
-                  ]}
-                >
+                <Text style={[styles.breakdownLabel, { color: colors.textSecondary }]}>
                   To Pay
                 </Text>
                 <Text style={[styles.breakdownAmount, { color: colors.error }]}>
@@ -161,131 +120,62 @@ const SummaryDetailModal: React.FC<SummaryDetailModalProps> = ({
             </View>
           </View>
 
-          {/* Calculation Display */}
-          <View
-            style={[
-              styles.calculationCard,
-              { backgroundColor: colors.surface },
-            ]}
-          >
-            <Text
-              style={[styles.calculationTitle, { color: colors.textPrimary }]}
-            >
-              Calculation
-            </Text>
-            <View style={styles.calculationRow}>
-              <Text
-                style={[
-                  styles.calculationText,
-                  { color: colors.textSecondary },
-                ]}
-              >
-                {formatAmount(summary.toReceive)} -{" "}
-                {formatAmount(summary.toPay)} ={" "}
-              </Text>
-              <Text
-                style={[
-                  styles.calculationResult,
-                  {
-                    color:
-                      summary.netTotal >= 0 ? colors.success : colors.error,
-                  },
-                ]}
-              >
-                {summary.netTotal >= 0 ? "+" : ""}
-                {formatAmount(summary.netTotal)}
-              </Text>
-            </View>
-          </View>
-
-          {/* Payment Details */}
           <View style={styles.paymentsSection}>
-            <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>
-              Payment Details
+            <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>
+              PAYMENT DETAILS
             </Text>
-            {summary.payments.map((payment, index) => (
-              <View
-                key={payment._id}
-                style={[
-                  styles.paymentItem,
-                  { backgroundColor: colors.surface },
-                  index === summary.payments.length - 1 && { marginBottom: 0 },
-                ]}
-              >
-                <View style={styles.paymentHeader}>
-                  <View style={styles.paymentTypeContainer}>
-                    {payment.type === "to_receive" ? (
-                      <TrendingUp size={16} color={colors.success} />
-                    ) : (
-                      <TrendingDown size={16} color={colors.error} />
-                    )}
+            {summary.payments.map((payment) => {
+              const statusConfig = getStatusConfig(payment.status);
+              return (
+                <View
+                  key={payment._id}
+                  style={[styles.paymentItem, { backgroundColor: colors.surface, borderColor: colors.cardBorder }]}
+                >
+                  <View style={styles.paymentHeader}>
                     <Text
                       style={[
                         styles.paymentType,
-                        {
-                          color:
-                            payment.type === "to_receive"
-                              ? colors.success
-                              : colors.error,
-                        },
+                        { color: payment.type === "to_receive" ? colors.success : colors.error },
                       ]}
                     >
                       {payment.type === "to_receive" ? "To Receive" : "To Pay"}
                     </Text>
+                    <Text
+                      style={[
+                        styles.paymentAmount,
+                        { color: payment.type === "to_receive" ? colors.success : colors.error },
+                      ]}
+                    >
+                      {payment.type === "to_receive" ? "+" : "-"}{formatAmount(payment.amount)}
+                    </Text>
                   </View>
-                  <Text
-                    style={[
-                      styles.paymentAmount,
-                      {
-                        color:
-                          payment.type === "to_receive"
-                            ? colors.success
-                            : colors.error,
-                      },
-                    ]}
-                  >
-                    {payment.type === "to_receive" ? "+" : "-"}
-                    {formatAmount(payment.amount)}
-                  </Text>
+                  {payment.description && (
+                    <Text style={[styles.paymentDescription, { color: colors.textSecondary }]}>
+                      {payment.description}
+                    </Text>
+                  )}
+                  <View style={styles.paymentFooter}>
+                    <Text style={[styles.paymentDate, { color: colors.textTertiary }]}>
+                      Due {formatDate(payment.dueDate)}
+                    </Text>
+                    <View style={[styles.statusBadge, { backgroundColor: statusConfig.bg }]}>
+                      <Text style={[styles.statusText, { color: statusConfig.color }]}>
+                        {statusConfig.text}
+                      </Text>
+                    </View>
+                  </View>
                 </View>
-                {payment.description && (
-                  <Text
-                    style={[
-                      styles.paymentDescription,
-                      { color: colors.textSecondary },
-                    ]}
-                  >
-                    {payment.description}
-                  </Text>
-                )}
-                <View style={styles.paymentFooter}>
-                  <Text
-                    style={[styles.paymentDate, { color: colors.textTertiary }]}
-                  >
-                    Due: {formatDate(payment.dueDate)}
-                  </Text>
-                  <Text
-                    style={[
-                      styles.paymentStatus,
-                      { color: getStatusColor(payment.status) },
-                    ]}
-                  >
-                    {getStatusText(payment.status)}
-                  </Text>
-                </View>
-              </View>
-            ))}
+              );
+            })}
           </View>
         </ScrollView>
-      </View>
+      </SafeAreaView>
     </Modal>
   );
 };
 
 export const SummaryScreen: React.FC<SummaryScreenProps> = ({ onBack }) => {
-  const [selectedSummary, setSelectedSummary] = useState<PaymentSummary | null>(
-    null
-  );
+  const [selectedSummary, setSelectedSummary] = useState<PaymentSummary | null>(null);
   const [modalVisible, setModalVisible] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const { theme } = useTheme();
@@ -318,17 +208,22 @@ export const SummaryScreen: React.FC<SummaryScreenProps> = ({ onBack }) => {
   };
 
   const formatAmount = (amount: number) => {
-    return `₨ ${amount.toLocaleString()}`;
+    return `Rs ${amount.toLocaleString()}`;
   };
 
   const renderSummaryCard = ({ item }: { item: PaymentSummary }) => (
     <TouchableOpacity
-      style={[styles.summaryCard, { backgroundColor: colors.surface }]}
+      style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.cardBorder }, shadows.sm]}
       onPress={() => handleSummaryPress(item)}
+      activeOpacity={0.7}
     >
       <View style={styles.cardHeader}>
         <View style={styles.personInfo}>
-          <User size={20} color={colors.textSecondary} />
+          <View style={[styles.avatar, { backgroundColor: colors.primaryLight }]}>
+            <Text style={[styles.avatarText, { color: colors.primary }]}>
+              {item.personName.charAt(0).toUpperCase()}
+            </Text>
+          </View>
           <Text style={[styles.personName, { color: colors.textPrimary }]}>
             {item.personName}
           </Text>
@@ -336,35 +231,25 @@ export const SummaryScreen: React.FC<SummaryScreenProps> = ({ onBack }) => {
         <Text
           style={[
             styles.netAmount,
-            {
-              color: item.netTotal >= 0 ? colors.success : colors.error,
-            },
+            { color: item.netTotal >= 0 ? colors.success : colors.error },
           ]}
         >
-          {formatAmount(item.netTotal)}
+          {item.netTotal >= 0 ? "+" : ""}{formatAmount(item.netTotal)}
         </Text>
       </View>
 
       <View style={styles.cardDetails}>
         <View style={styles.detailItem}>
-          <Text style={[styles.detailLabel, { color: colors.textSecondary }]}>
-            To Receive
-          </Text>
-          <Text style={[styles.detailAmount, { color: colors.success }]}>
-            +{formatAmount(item.toReceive)}
-          </Text>
+          <Text style={[styles.detailLabel, { color: colors.textTertiary }]}>To Receive</Text>
+          <Text style={[styles.detailAmount, { color: colors.success }]}>+{formatAmount(item.toReceive)}</Text>
         </View>
         <View style={styles.detailItem}>
-          <Text style={[styles.detailLabel, { color: colors.textSecondary }]}>
-            To Pay
-          </Text>
-          <Text style={[styles.detailAmount, { color: colors.error }]}>
-            -{formatAmount(item.toPay)}
-          </Text>
+          <Text style={[styles.detailLabel, { color: colors.textTertiary }]}>To Pay</Text>
+          <Text style={[styles.detailAmount, { color: colors.error }]}>-{formatAmount(item.toPay)}</Text>
         </View>
       </View>
 
-      <View style={styles.cardFooter}>
+      <View style={[styles.cardFooter, { borderTopColor: colors.borderLight }]}>
         <Text style={[styles.paymentCount, { color: colors.textTertiary }]}>
           {item.payments.length} payment{item.payments.length !== 1 ? "s" : ""}
         </Text>
@@ -374,39 +259,42 @@ export const SummaryScreen: React.FC<SummaryScreenProps> = ({ onBack }) => {
 
   const renderEmptyState = () => (
     <View style={styles.emptyContainer}>
-      <SheetIcon size={48} color={colors.textTertiary} />
-      <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
-        No payment summaries
+      <View style={[styles.emptyIconContainer, { backgroundColor: colors.primaryLight }]}>
+        <BarChart3 size={32} color={colors.primary} />
+      </View>
+      <Text style={[styles.emptyTitle, { color: colors.textPrimary }]}>
+        No summaries yet
       </Text>
-      <Text style={[styles.emptySubtext, { color: colors.textTertiary }]}>
+      <Text style={[styles.emptySubtext, { color: colors.textSecondary }]}>
         Add some payments to see summaries
       </Text>
     </View>
   );
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <LinearGradient
-        colors={colors.gradientPrimary as [string, string]}
-        style={styles.header}
-      >
-        <View style={styles.headerContent}>
-          <TouchableOpacity onPress={onBack} style={styles.backButton}>
-            <ChevronLeft size={24} color={colors.surface} />
-          </TouchableOpacity>
-          <Text style={[styles.title, { color: colors.surface }]}>
-            Payment Summaries
-          </Text>
-        </View>
-      </LinearGradient>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+      <StatusBar
+        barStyle={theme === "dark" ? "light-content" : "dark-content"}
+        backgroundColor={colors.background}
+      />
+
+      <View style={[styles.header, { borderBottomColor: colors.border }]}>
+        <TouchableOpacity
+          onPress={onBack}
+          style={[styles.backButton, { backgroundColor: colors.surfaceSecondary }]}
+          activeOpacity={0.7}
+        >
+          <ChevronLeft size={20} color={colors.textPrimary} />
+        </TouchableOpacity>
+        <Text style={[styles.headerTitle, { color: colors.textPrimary }]}>
+          Summaries
+        </Text>
+        <View style={styles.headerSpacer} />
+      </View>
 
       <View style={styles.content}>
         {summariesLoading ? (
-          <View style={styles.loadingContainer}>
-            <Text style={[styles.loadingText, { color: colors.textSecondary }]}>
-              Loading summaries...
-            </Text>
-          </View>
+          <SummaryCardSkeleton count={4} />
         ) : (
           <FlatList
             data={summaries}
@@ -431,7 +319,7 @@ export const SummaryScreen: React.FC<SummaryScreenProps> = ({ onBack }) => {
         summary={selectedSummary}
         onClose={() => setModalVisible(false)}
       />
-    </View>
+    </SafeAreaView>
   );
 };
 
@@ -440,99 +328,108 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   header: {
-    paddingTop: 50,
-    paddingBottom: 20,
-    paddingHorizontal: 20,
-  },
-  headerContent: {
     flexDirection: "row",
     alignItems: "center",
+    paddingHorizontal: spacing.xl,
+    paddingVertical: spacing.lg,
+    borderBottomWidth: 1,
+    gap: spacing.md,
   },
   backButton: {
-    padding: 8,
-    marginRight: 16,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: "bold",
-  },
-  content: {
-    flex: 1,
-    paddingHorizontal: 20,
-  },
-  loadingContainer: {
-    flex: 1,
+    width: 36,
+    height: 36,
+    borderRadius: radius.md,
     justifyContent: "center",
     alignItems: "center",
   },
-  loadingText: {
-    fontSize: 16,
+  headerTitle: {
+    ...typography.h2,
+  },
+  headerSpacer: {
+    flex: 1,
+  },
+  content: {
+    flex: 1,
+    paddingHorizontal: spacing.xl,
   },
   listContainer: {
-    paddingVertical: 20,
+    paddingTop: spacing.lg,
+    paddingBottom: spacing.xxxl,
   },
-  summaryCard: {
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 16,
+  card: {
+    borderRadius: radius.lg,
+    padding: spacing.lg,
+    marginBottom: spacing.md,
+    borderWidth: 1,
   },
   cardHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 12,
+    marginBottom: spacing.md,
   },
   personInfo: {
     flexDirection: "row",
     alignItems: "center",
-    flex: 1,
+    gap: spacing.md,
+  },
+  avatar: {
+    width: 36,
+    height: 36,
+    borderRadius: radius.full,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  avatarText: {
+    ...typography.bodySemibold,
   },
   personName: {
-    fontSize: 18,
-    fontWeight: "600",
-    marginLeft: 8,
+    ...typography.bodySemibold,
   },
   netAmount: {
-    fontSize: 20,
-    fontWeight: "bold",
+    ...typography.h3,
   },
   cardDetails: {
-    marginBottom: 12,
+    gap: spacing.xs,
   },
   detailItem: {
     flexDirection: "row",
     justifyContent: "space-between",
-    marginBottom: 4,
   },
   detailLabel: {
-    fontSize: 14,
+    ...typography.caption,
   },
   detailAmount: {
-    fontSize: 14,
-    fontWeight: "600",
+    ...typography.captionMedium,
   },
   cardFooter: {
     borderTopWidth: 1,
-    borderTopColor: "rgba(0,0,0,0.1)",
-    paddingTop: 8,
+    paddingTop: spacing.md,
+    marginTop: spacing.md,
   },
   paymentCount: {
-    fontSize: 12,
+    ...typography.caption,
   },
   emptyContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    paddingVertical: 60,
+    paddingVertical: 80,
   },
-  emptyText: {
-    fontSize: 18,
-    fontWeight: "600",
-    marginTop: 16,
-    marginBottom: 8,
+  emptyIconContainer: {
+    width: 64,
+    height: 64,
+    borderRadius: radius.full,
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: spacing.lg,
+  },
+  emptyTitle: {
+    ...typography.h3,
+    marginBottom: spacing.sm,
   },
   emptySubtext: {
-    fontSize: 14,
+    ...typography.body,
     textAlign: "center",
   },
   // Modal styles
@@ -542,103 +439,78 @@ const styles = StyleSheet.create({
   modalHeader: {
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: 20,
-    paddingTop: 60,
-    paddingBottom: 20,
+    paddingHorizontal: spacing.xl,
+    paddingVertical: spacing.lg,
+    borderBottomWidth: 1,
+    gap: spacing.md,
   },
   modalTitle: {
-    fontSize: 20,
-    fontWeight: "bold",
+    ...typography.h2,
   },
   modalContent: {
     flex: 1,
-    paddingHorizontal: 20,
+    padding: spacing.xl,
   },
-  modalSummaryCard: {
-    borderRadius: 12,
-    padding: 20,
-    marginBottom: 16,
+  summaryCard: {
+    borderRadius: radius.lg,
+    padding: spacing.xl,
+    marginBottom: spacing.lg,
+    borderWidth: 1,
   },
-  summaryTitle: {
-    fontSize: 16,
-    fontWeight: "600",
-    marginBottom: 8,
+  summaryLabel: {
+    ...typography.captionMedium,
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+    marginBottom: spacing.xs,
   },
   netTotal: {
     fontSize: 32,
-    fontWeight: "bold",
-    marginBottom: 16,
+    fontWeight: "700",
+    marginBottom: spacing.lg,
   },
   summaryBreakdown: {
-    gap: 8,
+    gap: spacing.sm,
   },
   breakdownItem: {
     flexDirection: "row",
     justifyContent: "space-between",
   },
   breakdownLabel: {
-    fontSize: 14,
+    ...typography.body,
   },
   breakdownAmount: {
-    fontSize: 14,
-    fontWeight: "600",
-  },
-  calculationCard: {
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 20,
-  },
-  calculationTitle: {
-    fontSize: 16,
-    fontWeight: "600",
-    marginBottom: 8,
-  },
-  calculationRow: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  calculationText: {
-    fontSize: 16,
-  },
-  calculationResult: {
-    fontSize: 18,
-    fontWeight: "bold",
+    ...typography.bodySemibold,
   },
   paymentsSection: {
-    marginBottom: 20,
+    marginBottom: spacing.xl,
   },
   sectionTitle: {
-    fontSize: 18,
-    fontWeight: "600",
-    marginBottom: 12,
+    ...typography.captionMedium,
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+    marginBottom: spacing.md,
   },
   paymentItem: {
-    borderRadius: 8,
-    padding: 12,
-    marginBottom: 8,
+    borderRadius: radius.md,
+    padding: spacing.lg,
+    marginBottom: spacing.sm,
+    borderWidth: 1,
   },
   paymentHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 4,
-  },
-  paymentTypeContainer: {
-    flexDirection: "row",
-    alignItems: "center",
+    marginBottom: spacing.xs,
   },
   paymentType: {
-    fontSize: 14,
-    fontWeight: "600",
-    marginLeft: 4,
+    ...typography.captionMedium,
   },
   paymentAmount: {
-    fontSize: 16,
-    fontWeight: "bold",
+    ...typography.bodySemibold,
   },
   paymentDescription: {
-    fontSize: 12,
-    marginBottom: 8,
+    ...typography.caption,
+    marginBottom: spacing.sm,
   },
   paymentFooter: {
     flexDirection: "row",
@@ -646,10 +518,14 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   paymentDate: {
-    fontSize: 12,
+    ...typography.caption,
   },
-  paymentStatus: {
-    fontSize: 12,
-    fontWeight: "600",
+  statusBadge: {
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+    borderRadius: radius.sm,
+  },
+  statusText: {
+    ...typography.small,
   },
 });

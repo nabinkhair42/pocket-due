@@ -91,11 +91,12 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthSuccess }) => {
       <View style={styles.content}>
         <View>
           <Button
-            icon={<ChevronRight size={20} color={colors.surface} />}
+            icon={<ChevronRight size={20} color={colors.white} />}
             variant="primary"
             onPress={() => setShowEmailForm(true)}
+            size="xl"
           >
-            <Text style={[styles.buttonText, { color: colors.surface }]}>
+            <Text style={[styles.buttonText, { color: colors.white }]}>
               Get Started
             </Text>
           </Button>
@@ -190,9 +191,9 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthSuccess }) => {
           disabled={loading}
         >
           {loading ? (
-            <ActivityIndicator color={colors.surface} />
+            <ActivityIndicator color={colors.white} />
           ) : (
-            <Text style={[styles.buttonText, { color: colors.surface }]}>
+            <Text style={[styles.buttonText, { color: colors.white }]}>
               {showLoginForm ? "Sign In" : "Create Account"}
             </Text>
           )}

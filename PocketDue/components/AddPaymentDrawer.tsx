@@ -1,23 +1,27 @@
 import DateTimePicker from "@react-native-community/datetimepicker";
-import { Calendar, ChevronDown, ChevronUp, DollarSign, FileText, User, X } from "lucide-react-native";
-import React, { useEffect, useRef, useState } from "react";
+import { ArrowDownLeft, ArrowUpRight, Calendar, ChevronDown, DollarSign, FileText, User, Check } from "lucide-react-native";
+import React, { useEffect, useState } from "react";
 import {
-  Animated,
-  Dimensions,
+  FlatList,
+  Keyboard,
   Modal,
+  Platform,
+  Pressable,
   ScrollView,
   StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
-  View
+  TouchableWithoutFeedback,
+  View,
 } from "react-native";
 import { useTheme } from "../contexts/ThemeContext";
 import { apiService } from "../lib/api";
-import { getThemeColors } from "../lib/theme";
+import { getThemeColors, spacing, radius, typography, shadows } from "../lib/theme";
 import { CreatePaymentRequest } from "../types/api";
 import { Payment } from "../types/models";
 import { Button } from "./Button";
+import { Drawer } from "./Drawer";
 
 interface AddPaymentDrawerProps {
   visible: boolean;
@@ -25,8 +29,6 @@ interface AddPaymentDrawerProps {
   onSubmit: (data: CreatePaymentRequest) => void;
   editingPayment?: Payment | null;
 }
-
-const { width } = Dimensions.get("window");
 
 export const AddPaymentDrawer: React.FC<AddPaymentDrawerProps> = ({
   visible,
@@ -50,21 +52,16 @@ export const AddPaymentDrawer: React.FC<AddPaymentDrawerProps> = ({
   // Dropdown state
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [searchText, setSearchText] = useState("");
-  const slideAnim = useRef(new Animated.Value(0)).current;
 
   const filteredOptions = previousUsers.filter((option) =>
     option.toLowerCase().includes(searchText.toLowerCase())
   );
 
   useEffect(() => {
-    Animated.timing(slideAnim, {
-      toValue: isDropdownOpen ? 1 : 0,
-      duration: 200,
-      useNativeDriver: false,
-    }).start();
-  }, [isDropdownOpen]);
+    // Reset dropdown state when drawer opens/closes
+    setIsDropdownOpen(false);
+    setSearchText("");
 
-  useEffect(() => {
     if (editingPayment) {
       setFormData({
         type: editingPayment.type,
@@ -93,15 +90,10 @@ export const AddPaymentDrawer: React.FC<AddPaymentDrawerProps> = ({
 
   const loadPreviousUsers = async () => {
     try {
-      console.log("Loading previous users...");
       setLoadingUsers(true);
       const response = await apiService.getPreviousUsers();
-      console.log("Previous users response:", response);
       if (response.success && response.data?.previousUsers) {
-        console.log("Setting previous users:", response.data.previousUsers);
         setPreviousUsers(response.data.previousUsers);
-      } else {
-        console.log("No previous users found or error:", response);
       }
     } catch (error) {
       console.error("Error loading previous users:", error);
@@ -114,17 +106,6 @@ export const AddPaymentDrawer: React.FC<AddPaymentDrawerProps> = ({
     setFormData({ ...formData, personName: selectedValue });
     setIsDropdownOpen(false);
     setSearchText("");
-  };
-
-  const handlePersonNameChange = (text: string) => {
-    setFormData({ ...formData, personName: text });
-    setSearchText(text);
-    // Show dropdown when typing and there are previous users
-    if (text.length > 0 && previousUsers.length > 0) {
-      setIsDropdownOpen(true);
-    } else {
-      setIsDropdownOpen(false);
-    }
   };
 
   const handleSubmit = () => {
@@ -142,100 +123,81 @@ export const AddPaymentDrawer: React.FC<AddPaymentDrawerProps> = ({
     });
   };
 
-  const renderInputField = (
-    icon: React.ReactNode,
-    placeholder: string,
-    value: string | number,
-    onChangeText: (text: string) => void,
-    keyboardType: "default" | "numeric" = "default",
-    multiline: boolean = false
-  ) => (
-    <View style={[styles.inputContainer, { backgroundColor: colors.surface }]}>
-      <View style={styles.inputIcon}>{icon}</View>
-      <TextInput
-        style={[styles.input, { color: colors.textPrimary }]}
-        placeholder={placeholder}
-        placeholderTextColor={colors.textTertiary}
-        value={value.toString()}
-        onChangeText={onChangeText}
-        keyboardType={keyboardType}
-        multiline={multiline}
-        numberOfLines={multiline ? 3 : 1}
-      />
-    </View>
-  );
-
   return (
-    <Modal
+    <Drawer
       visible={visible}
-      animationType="slide"
-      presentationStyle="pageSheet"
-      onRequestClose={onClose}
+      onClose={onClose}
+      height={680}
     >
-      <View style={[styles.container, { backgroundColor: colors.background }]}>
-        <View style={styles.header}>
-          <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-            <X size={24} color={colors.textPrimary} />
-          </TouchableOpacity>
-          <Text style={[styles.title, { color: colors.textPrimary }]}>
-            {editingPayment ? "Edit Payment" : "Add Payment"}
-          </Text>
-        </View>
+      <View style={styles.container}>
+        <Text style={[styles.title, { color: colors.textPrimary }]}>
+          {editingPayment ? "Edit Payment" : "Add Payment"}
+        </Text>
 
-        <View style={styles.content}>
+        <ScrollView
+          style={styles.scrollView}
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+          bounces={true}
+          nestedScrollEnabled={true}
+        >
+          {/* Payment Type */}
           <View style={styles.section}>
-            <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>
+            <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>
               Payment Type
             </Text>
-            <View style={styles.typeButtons}>
+            <View style={[styles.typeContainer, { backgroundColor: colors.surfaceSecondary }]}>
               <TouchableOpacity
                 style={[
-                  styles.typeButton,
-                  {
-                    backgroundColor:
-                      formData.type === "to_pay"
-                        ? colors.primary
-                        : colors.surfaceSecondary,
-                  },
+                  styles.typeTab,
+                  formData.type === "to_pay" && [
+                    styles.typeTabActive,
+                    { backgroundColor: colors.surface },
+                    shadows.sm,
+                  ],
                 ]}
                 onPress={() => setFormData({ ...formData, type: "to_pay" })}
+                activeOpacity={0.7}
               >
+                <ArrowUpRight
+                  size={16}
+                  color={formData.type === "to_pay" ? colors.primary : colors.textTertiary}
+                />
                 <Text
                   style={[
-                    styles.typeButtonText,
-                    {
-                      color:
-                        formData.type === "to_pay"
-                          ? colors.surface
-                          : colors.textSecondary,
-                    },
+                    styles.typeTabText,
+                    { color: colors.textTertiary },
+                    formData.type === "to_pay" && { color: colors.textPrimary },
                   ]}
+                  numberOfLines={1}
                 >
                   To Pay
                 </Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[
-                  styles.typeButton,
-                  {
-                    backgroundColor:
-                      formData.type === "to_receive"
-                        ? colors.primary
-                        : colors.surfaceSecondary,
-                  },
+                  styles.typeTab,
+                  formData.type === "to_receive" && [
+                    styles.typeTabActive,
+                    { backgroundColor: colors.surface },
+                    shadows.sm,
+                  ],
                 ]}
                 onPress={() => setFormData({ ...formData, type: "to_receive" })}
+                activeOpacity={0.7}
               >
+                <ArrowDownLeft
+                  size={16}
+                  color={formData.type === "to_receive" ? colors.primary : colors.textTertiary}
+                />
                 <Text
                   style={[
-                    styles.typeButtonText,
-                    {
-                      color:
-                        formData.type === "to_receive"
-                          ? colors.surface
-                          : colors.textSecondary,
-                    },
+                    styles.typeTabText,
+                    { color: colors.textTertiary },
+                    formData.type === "to_receive" && { color: colors.textPrimary },
                   ]}
+                  numberOfLines={1}
                 >
                   To Receive
                 </Text>
@@ -243,22 +205,25 @@ export const AddPaymentDrawer: React.FC<AddPaymentDrawerProps> = ({
             </View>
           </View>
 
+          {/* Payment Details */}
           <View style={styles.section}>
-            <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>
+            <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>
               Payment Details
             </Text>
 
-            {/* Integrated Person Name Field with Dropdown */}
+            {/* Person Name Field with Dropdown */}
             <View style={styles.personNameContainer}>
-              <View
-                style={[
-                  styles.inputContainer,
-                  { backgroundColor: colors.surface },
-                ]}
+              <TouchableOpacity
+                style={[styles.inputContainer, { backgroundColor: colors.surface }]}
+                onPress={() => {
+                  if (previousUsers.length > 0) {
+                    Keyboard.dismiss();
+                    setIsDropdownOpen(true);
+                  }
+                }}
+                activeOpacity={0.8}
               >
-                <View style={styles.inputIcon}>
-                  <User size={20} color={colors.textSecondary} />
-                </View>
+                <User size={20} color={colors.textTertiary} />
                 <TextInput
                   style={[styles.input, { color: colors.textPrimary }]}
                   placeholder={
@@ -268,120 +233,143 @@ export const AddPaymentDrawer: React.FC<AddPaymentDrawerProps> = ({
                   }
                   placeholderTextColor={colors.textTertiary}
                   value={formData.personName}
-                  onChangeText={handlePersonNameChange}
+                  onChangeText={(text) => {
+                    setFormData({ ...formData, personName: text });
+                    setSearchText(text);
+                  }}
                   onFocus={() => {
-                    if (
-                      previousUsers.length > 0 &&
-                      formData.personName.length > 0
-                    ) {
+                    if (previousUsers.length > 0) {
                       setIsDropdownOpen(true);
                     }
                   }}
                 />
                 {previousUsers.length > 0 && (
                   <TouchableOpacity
-                    onPress={() => setIsDropdownOpen(!isDropdownOpen)}
+                    onPress={() => {
+                      Keyboard.dismiss();
+                      setIsDropdownOpen(!isDropdownOpen);
+                    }}
                     style={styles.dropdownToggle}
+                    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                   >
-                    {isDropdownOpen ? (
-                      <ChevronUp size={20} color={colors.textSecondary} />
-                    ) : (
-                      <ChevronDown size={20} color={colors.textSecondary} />
-                    )}
+                    <ChevronDown size={20} color={colors.textTertiary} />
                   </TouchableOpacity>
                 )}
-              </View>
+              </TouchableOpacity>
 
-              {/* Inline Dropdown */}
-              {isDropdownOpen && previousUsers.length > 0 && (
-                <Animated.View
-                  style={[
-                    styles.inlineDropdown,
-                    {
-                      backgroundColor: colors.cardBackground,
-                      borderColor: colors.border,
-                      transform: [
-                        {
-                          translateY: slideAnim.interpolate({
-                            inputRange: [0, 1],
-                            outputRange: [-10, 0],
-                          }),
-                        },
-                      ],
-                      opacity: slideAnim,
-                    },
-                  ]}
-                >
-                  <View style={styles.optionsList}>
-                    {filteredOptions.map((item) => (
-                      <TouchableOpacity
-                        key={item}
+              {/* Dropdown Modal - shadcn/ui style */}
+              <Modal
+                visible={isDropdownOpen && previousUsers.length > 0}
+                transparent
+                animationType="fade"
+                onRequestClose={() => setIsDropdownOpen(false)}
+              >
+                <TouchableWithoutFeedback onPress={() => setIsDropdownOpen(false)}>
+                  <View style={styles.dropdownOverlay}>
+                    <TouchableWithoutFeedback>
+                      <View
                         style={[
-                          styles.option,
-                          { borderBottomColor: colors.borderSecondary },
-                          formData.personName === item && {
-                            backgroundColor: colors.primary,
+                          styles.dropdownModal,
+                          {
+                            backgroundColor: colors.surface,
+                            borderColor: colors.border,
                           },
+                          shadows.lg,
                         ]}
-                        onPress={() => handlePersonNameSelect(item)}
                       >
-                        <Text
-                          style={[
-                            styles.optionText,
-                            {
-                              color:
-                                formData.personName === item
-                                  ? colors.surface
-                                  : colors.textPrimary,
-                            },
-                          ]}
-                        >
-                          {item}
-                        </Text>
-                      </TouchableOpacity>
-                    ))}
-                  </View>
+                        {/* Search Input */}
+                        <View style={[styles.dropdownSearchContainer, { borderBottomColor: colors.borderLight }]}>
+                          <User size={16} color={colors.textTertiary} />
+                          <TextInput
+                            style={[styles.dropdownSearchInput, { color: colors.textPrimary }]}
+                            placeholder="Search contacts..."
+                            placeholderTextColor={colors.textTertiary}
+                            value={searchText}
+                            onChangeText={setSearchText}
+                            autoFocus
+                          />
+                        </View>
 
-                  {filteredOptions.length === 0 && (
-                    <View style={styles.emptyState}>
-                      <Text
-                        style={[
-                          styles.emptyText,
-                          { color: colors.textSecondary },
-                        ]}
-                      >
-                        No previous users found
-                      </Text>
-                    </View>
-                  )}
-                </Animated.View>
-              )}
+                        {/* Options List */}
+                        <FlatList
+                          data={filteredOptions}
+                          keyExtractor={(item) => item}
+                          style={styles.dropdownList}
+                          showsVerticalScrollIndicator={true}
+                          bounces={true}
+                          keyboardShouldPersistTaps="handled"
+                          renderItem={({ item }) => {
+                            const isSelected = formData.personName === item;
+                            return (
+                              <Pressable
+                                style={({ pressed }) => [
+                                  styles.dropdownOption,
+                                  { backgroundColor: pressed ? colors.surfaceSecondary : 'transparent' },
+                                  isSelected && { backgroundColor: colors.primaryLight },
+                                ]}
+                                onPress={() => handlePersonNameSelect(item)}
+                              >
+                                <View style={[styles.optionAvatar, { backgroundColor: isSelected ? colors.primary : colors.surfaceSecondary }]}>
+                                  <Text style={[styles.optionAvatarText, { color: isSelected ? colors.white : colors.textSecondary }]}>
+                                    {item.charAt(0).toUpperCase()}
+                                  </Text>
+                                </View>
+                                <Text
+                                  style={[
+                                    styles.dropdownOptionText,
+                                    { color: isSelected ? colors.primary : colors.textPrimary },
+                                    isSelected && { fontWeight: '600' },
+                                  ]}
+                                >
+                                  {item}
+                                </Text>
+                                {isSelected && (
+                                  <Check size={16} color={colors.primary} />
+                                )}
+                              </Pressable>
+                            );
+                          }}
+                          ListEmptyComponent={
+                            <View style={styles.emptyState}>
+                              <Text style={[styles.emptyText, { color: colors.textTertiary }]}>
+                                No contacts found
+                              </Text>
+                            </View>
+                          }
+                        />
+                      </View>
+                    </TouchableWithoutFeedback>
+                  </View>
+                </TouchableWithoutFeedback>
+              </Modal>
             </View>
-            {renderInputField(
-              <DollarSign size={20} color={colors.textSecondary} />,
-              "Amount",
-              formData.amount,
-              (text) =>
-                setFormData({ ...formData, amount: parseFloat(text) || 0 }),
-              "numeric"
-            )}
+
+            {/* Amount */}
+            <View style={[styles.inputContainer, { backgroundColor: colors.surface }]}>
+              <DollarSign size={20} color={colors.textTertiary} />
+              <TextInput
+                style={[styles.input, { color: colors.textPrimary }]}
+                placeholder="Amount"
+                placeholderTextColor={colors.textTertiary}
+                value={formData.amount ? formData.amount.toString() : ""}
+                onChangeText={(text) =>
+                  setFormData({ ...formData, amount: parseFloat(text) || 0 })
+                }
+                keyboardType="numeric"
+              />
+            </View>
 
             {/* Quick Amount Selection */}
             <View style={styles.quickAmountContainer}>
-              <Text
-                style={[
-                  styles.quickAmountLabel,
-                  { color: colors.textSecondary },
-                ]}
-              >
-                Quick select amount:
+              <Text style={[styles.quickAmountLabel, { color: colors.textTertiary }]}>
+                Quick select:
               </Text>
               <ScrollView
                 horizontal
                 showsHorizontalScrollIndicator={false}
                 contentContainerStyle={styles.quickAmountScroll}
               >
-                {[20, 50, 80, 100, 150, 200, 500].map((amount) => (
+                {[50, 100, 200, 500, 1000].map((amount) => (
                   <TouchableOpacity
                     key={amount}
                     style={[
@@ -391,11 +379,6 @@ export const AddPaymentDrawer: React.FC<AddPaymentDrawerProps> = ({
                           formData.amount === amount
                             ? colors.primary
                             : colors.surfaceSecondary,
-                        borderWidth: formData.amount === amount ? 0 : 1,
-                        borderColor:
-                          formData.amount === amount
-                            ? "transparent"
-                            : colors.border,
                       },
                     ]}
                     onPress={() => setFormData({ ...formData, amount })}
@@ -406,58 +389,59 @@ export const AddPaymentDrawer: React.FC<AddPaymentDrawerProps> = ({
                         {
                           color:
                             formData.amount === amount
-                              ? colors.surface
+                              ? colors.white
                               : colors.textSecondary,
                         },
                       ]}
                     >
-                      ₨{amount}
+                      {amount}
                     </Text>
                   </TouchableOpacity>
                 ))}
               </ScrollView>
             </View>
 
-            {renderInputField(
-              <FileText size={20} color={colors.textSecondary} />,
-              "Description (optional)",
-              formData.description || "",
-              (text) => setFormData({ ...formData, description: text }),
-              "default",
-              true
-            )}
+            {/* Description */}
+            <View style={[styles.inputContainer, { backgroundColor: colors.surface }]}>
+              <FileText size={20} color={colors.textTertiary} />
+              <TextInput
+                style={[styles.input, { color: colors.textPrimary }]}
+                placeholder="Description (optional)"
+                placeholderTextColor={colors.textTertiary}
+                value={formData.description || ""}
+                onChangeText={(text) => setFormData({ ...formData, description: text })}
+                multiline
+                numberOfLines={2}
+              />
+            </View>
 
+            {/* Due Date */}
             <TouchableOpacity
-              style={[
-                styles.inputContainer,
-                { backgroundColor: colors.surface },
-              ]}
+              style={[styles.inputContainer, { backgroundColor: colors.surface }]}
               onPress={() => setShowDatePicker(true)}
             >
-              <View style={styles.inputIcon}>
-                <Calendar size={20} color={colors.textSecondary} />
-              </View>
+              <Calendar size={20} color={colors.textTertiary} />
               <Text style={[styles.dateText, { color: colors.textPrimary }]}>
                 {formatDate(formData.dueDate)}
               </Text>
             </TouchableOpacity>
           </View>
-        </View>
+        </ScrollView>
 
+        {/* Footer Button */}
         <View style={styles.footer}>
           <Button
             onPress={handleSubmit}
             variant="primary"
             size="lg"
-            style={styles.submitButton}
+            fullWidth
           >
-            <Text style={[styles.submitText, { color: colors.surface }]}>
-              {editingPayment ? "Update Payment" : "Add Payment"}
-            </Text>
+            {editingPayment ? "Update Payment" : "Add Payment"}
           </Button>
         </View>
 
-        {showDatePicker && (
+        {/* Date Picker - Platform specific rendering */}
+        {showDatePicker && Platform.OS === "android" && (
           <DateTimePicker
             value={formData.dueDate}
             mode="date"
@@ -470,172 +454,226 @@ export const AddPaymentDrawer: React.FC<AddPaymentDrawerProps> = ({
             }}
           />
         )}
+
+        {/* iOS Date Picker Modal with proper theming */}
+        {Platform.OS === "ios" && (
+          <Modal
+            visible={showDatePicker}
+            transparent
+            animationType="fade"
+            onRequestClose={() => setShowDatePicker(false)}
+          >
+            <TouchableWithoutFeedback onPress={() => setShowDatePicker(false)}>
+              <View style={styles.datePickerOverlay}>
+                <TouchableWithoutFeedback>
+                  <View style={[styles.datePickerModal, { backgroundColor: colors.surface }]}>
+                    <View style={[styles.datePickerHeader, { borderBottomColor: colors.borderLight }]}>
+                      <Text style={[styles.datePickerTitle, { color: colors.textPrimary }]}>
+                        Select Date
+                      </Text>
+                      <TouchableOpacity onPress={() => setShowDatePicker(false)}>
+                        <Text style={[styles.datePickerDone, { color: colors.primary }]}>
+                          Done
+                        </Text>
+                      </TouchableOpacity>
+                    </View>
+                    <DateTimePicker
+                      value={formData.dueDate}
+                      mode="date"
+                      display="spinner"
+                      themeVariant={theme}
+                      onChange={(event, selectedDate) => {
+                        if (selectedDate) {
+                          setFormData({ ...formData, dueDate: selectedDate });
+                        }
+                      }}
+                      style={styles.iosDatePicker}
+                    />
+                  </View>
+                </TouchableWithoutFeedback>
+              </View>
+            </TouchableWithoutFeedback>
+          </Modal>
+        )}
       </View>
-    </Modal>
+    </Drawer>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-  },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 20,
-    paddingTop: 60,
-    paddingBottom: 20,
-  },
-  closeButton: {
-    padding: 8,
-    marginRight: 16,
+    paddingHorizontal: spacing.xl,
   },
   title: {
-    fontSize: 20,
-    fontWeight: "bold",
+    ...typography.h2,
+    marginBottom: spacing.lg,
   },
-  content: {
+  scrollView: {
     flex: 1,
-    paddingHorizontal: 20,
-    paddingBottom: 20,
+  },
+  scrollContent: {
+    paddingBottom: spacing.xl,
   },
   section: {
-    marginBottom: 24,
+    marginBottom: spacing.xl,
   },
   sectionTitle: {
-    fontSize: 16,
-    fontWeight: "600",
-    marginBottom: 12,
+    ...typography.captionMedium,
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+    marginBottom: spacing.md,
   },
-  typeButtons: {
+  typeContainer: {
     flexDirection: "row",
-    gap: 12,
+    borderRadius: radius.md,
+    padding: spacing.xs,
   },
-  typeButton: {
+  typeTab: {
     flex: 1,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 8,
+    flexDirection: "row",
     alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.sm,
+    borderRadius: radius.sm,
+    gap: spacing.xs,
   },
-  typeButtonText: {
-    fontSize: 14,
-    fontWeight: "600",
+  typeTabActive: {},
+  typeTabText: {
+    ...typography.bodyMedium,
   },
   inputContainer: {
     flexDirection: "row",
     alignItems: "center",
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 16,
-    marginBottom: 16,
-    gap: 12,
-    
-  },
-  inputIcon: {
-    justifyContent: "center",
-    alignItems: "center",
+    borderRadius: radius.md,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+    marginBottom: spacing.md,
+    gap: spacing.md,
   },
   input: {
     flex: 1,
-    fontSize: 16,
+    ...typography.body,
   },
   dateText: {
     flex: 1,
-    fontSize: 16,
-  },
-  footer: {
-    paddingHorizontal: 20,
-    paddingBottom: 40,
-  },
-  submitButton: {
-    width: "100%",
-  },
-  submitText: {
-    fontSize: 16,
-    fontWeight: "600",
+    ...typography.body,
   },
   personNameContainer: {
-    marginBottom: 16,
     position: "relative",
+    zIndex: 1000,
   },
   dropdownToggle: {
-    padding: 4,
+    padding: spacing.xs,
   },
-  overlay: {
+  // Dropdown Modal Styles (shadcn/ui inspired)
+  dropdownOverlay: {
     flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.4)",
+    justifyContent: "center",
+    alignItems: "center",
+    padding: spacing.xl,
+  },
+  dropdownModal: {
+    width: "100%",
+    maxWidth: 340,
+    maxHeight: 400,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    overflow: "hidden",
+  },
+  dropdownSearchContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.md,
+    borderBottomWidth: 1,
+    gap: spacing.sm,
+  },
+  dropdownSearchInput: {
+    flex: 1,
+    ...typography.body,
+    padding: 0,
+  },
+  dropdownList: {
+    maxHeight: 320,
+  },
+  dropdownOption: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.md,
+    gap: spacing.md,
+  },
+  dropdownOptionText: {
+    ...typography.body,
+    flex: 1,
+  },
+  optionAvatar: {
+    width: 32,
+    height: 32,
+    borderRadius: radius.full,
     justifyContent: "center",
     alignItems: "center",
   },
-  dropdown: {
-    width: width - 40,
-    maxHeight: 250,
-    borderRadius: 12,
-    borderWidth: 1,
-  },
-  inlineDropdown: {
-    position: "absolute",
-    top: "100%",
-    left: 0,
-    right: 0,
-    maxHeight: 200,
-    borderRadius: 8,
-    borderWidth: 1,
-    zIndex: 1000,
-    overflow: "hidden",
-    shadowColor: "#000",
-  },
-  searchContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-  },
-  searchIcon: {
-    marginRight: 8,
-  },
-  searchInput: {
-    flex: 1,
-    fontSize: 16,
-  },
-  optionsList: {
-    maxHeight: 200,
-  },
-  option: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-  },
-  optionText: {
-    fontSize: 16,
+  optionAvatarText: {
+    ...typography.captionMedium,
   },
   emptyState: {
-    padding: 20,
+    padding: spacing.xxl,
     alignItems: "center",
   },
   emptyText: {
-    fontSize: 14,
+    ...typography.body,
+  },
+  // Date Picker Modal Styles
+  datePickerOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.4)",
+    justifyContent: "flex-end",
+  },
+  datePickerModal: {
+    borderTopLeftRadius: radius.xl,
+    borderTopRightRadius: radius.xl,
+    paddingBottom: spacing.xxl,
+  },
+  datePickerHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingHorizontal: spacing.xl,
+    paddingVertical: spacing.lg,
+    borderBottomWidth: 1,
+  },
+  datePickerTitle: {
+    ...typography.bodySemibold,
+  },
+  datePickerDone: {
+    ...typography.bodySemibold,
+  },
+  iosDatePicker: {
+    height: 200,
   },
   quickAmountContainer: {
-    marginBottom: 16,
+    marginBottom: spacing.md,
   },
   quickAmountLabel: {
-    fontSize: 14,
-    fontWeight: "500",
-    marginBottom: 8,
+    ...typography.caption,
+    marginBottom: spacing.sm,
   },
   quickAmountScroll: {
-    paddingRight: 20,
+    gap: spacing.sm,
   },
   quickAmountBadge: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 12,
-    marginRight: 8,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderRadius: radius.full,
   },
   quickAmountText: {
-    fontSize: 14,
-    fontWeight: "600",
+    ...typography.captionMedium,
+  },
+  footer: {
+    paddingVertical: spacing.lg,
   },
 });

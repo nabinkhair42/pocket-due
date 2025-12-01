@@ -1,26 +1,26 @@
-import { LinearGradient } from "expo-linear-gradient";
 import {
   Calendar,
   ChevronLeft,
+  ChevronRight,
   Eye,
   EyeOff,
-  Fingerprint,
+  ExternalLink,
+  Globe,
   HelpCircle,
   Info,
   Lock,
   LogOut,
+  Mail,
   Moon,
-  Settings as SettingsIcon,
   Shield,
   Sun,
   Trash2,
   User,
-  UserCheck,
-  UserPenIcon
+  UserPen,
 } from "lucide-react-native";
 import React, { useState } from "react";
 import {
-  Alert,
+  Linking,
   Modal,
   ScrollView,
   StyleSheet,
@@ -29,13 +29,16 @@ import {
   TextInput,
   TouchableOpacity,
   View,
+  StatusBar,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { Button } from "../components/Button";
+import { Drawer } from "../components/Drawer";
 import { useTheme } from "../contexts/ThemeContext";
 import { useToast } from "../contexts/ToastContext";
 import { useAuth } from "../hooks/useAuth";
 import { useUser } from "../hooks/useUser";
-import { getThemeColors } from "../lib/theme";
+import { getThemeColors, spacing, radius, typography } from "../lib/theme";
 import { ChangePasswordScreen } from "./ChangePasswordScreen";
 import { EditProfileScreen } from "./EditProfileScreen";
 
@@ -59,27 +62,19 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
   const [deletePassword, setDeletePassword] = useState("");
   const [showDeletePassword, setShowDeletePassword] = useState(false);
 
-  const handleLogout = () => {
-    Alert.alert("Logout", "Are you sure you want to logout?", [
-      { text: "Cancel", style: "cancel" },
-      {
-        text: "Logout",
-        style: "destructive",
-        onPress: async () => {
-          await logout();
-          onLogout();
-        },
-      },
-    ]);
-  };
+  // Drawer states
+  const [showLogoutDrawer, setShowLogoutDrawer] = useState(false);
+  const [showAboutDrawer, setShowAboutDrawer] = useState(false);
+  const [showHelpDrawer, setShowHelpDrawer] = useState(false);
 
-  const handleDeleteAccount = () => {
-    setShowDeleteAccount(true);
+  const handleLogoutConfirm = async () => {
+    setShowLogoutDrawer(false);
+    await logout();
+    onLogout();
   };
 
   const confirmDeleteAccount = async () => {
     const success = await deleteAccount(deletePassword);
-
     if (success) {
       setShowDeleteAccount(false);
       setDeletePassword("");
@@ -87,64 +82,43 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
     }
   };
 
-  const renderSectionHeader = (title: string, icon: React.ReactNode) => (
-    <View style={styles.sectionHeader}>
-      <View style={styles.sectionIcon}>{icon}</View>
-      <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>
-        {title}
-      </Text>
-    </View>
-  );
+  const openWebsite = () => {
+    Linking.openURL("https://nabinkhair.com.np");
+  };
+
+  const openEmail = () => {
+    Linking.openURL("mailto:nabinkhair12@gmail.com");
+  };
 
   const renderSettingItem = (
     icon: React.ReactNode,
     title: string,
     subtitle?: string,
     onPress?: () => void,
-    rightComponent?: React.ReactNode,
-    danger?: boolean
+    rightComponent?: React.ReactNode
   ) => (
     <TouchableOpacity
-      style={[
-        styles.settingItem,
-        { backgroundColor: colors.surface },
-        danger && {
-          borderColor: colors.error,
-          borderWidth: 1,
-          borderRadius: 12,
-        },
-      ]}
+      style={[styles.settingItem, { backgroundColor: colors.surface }]}
       onPress={onPress}
       disabled={!onPress}
+      activeOpacity={0.7}
     >
-      <View style={styles.settingLeft}>
-        <View
-          style={[
-            styles.settingIcon,
-            { backgroundColor: colors.surfaceSecondary },
-          ]}
-        >
-          {icon}
-        </View>
-        <View style={styles.settingText}>
-          <Text style={[styles.settingTitle, { color: colors.textPrimary }]}>
-            {title}
-          </Text>
-          {subtitle && (
-            <Text
-              style={[styles.settingSubtitle, { color: colors.textSecondary }]}
-            >
-              {subtitle}
-            </Text>
-          )}
-        </View>
+      <View style={[styles.settingIcon, { backgroundColor: colors.surfaceSecondary }]}>
+        {icon}
       </View>
-      {rightComponent && (
-        <View style={styles.settingRight}>{rightComponent}</View>
-      )}
+      <View style={styles.settingText}>
+        <Text style={[styles.settingTitle, { color: colors.textPrimary }]}>
+          {title}
+        </Text>
+        {subtitle && (
+          <Text style={[styles.settingSubtitle, { color: colors.textSecondary }]}>
+            {subtitle}
+          </Text>
+        )}
+      </View>
+      {rightComponent || (onPress && <ChevronRight size={20} color={colors.textTertiary} />)}
     </TouchableOpacity>
   );
-
 
   if (showEditProfile) {
     return <EditProfileScreen onBack={() => setShowEditProfile(false)} />;
@@ -155,151 +129,232 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
   }
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <LinearGradient
-        colors={colors.gradientPrimary as [string, string]}
-        style={styles.header}
-      >
-        <View style={styles.headerContent}>
-          <TouchableOpacity onPress={onBack} style={styles.backButton}>
-            <ChevronLeft size={24} color={colors.surface} />
-          </TouchableOpacity>
-          <Text style={[styles.title, { color: colors.surface }]}>
-            Settings
-          </Text>
-          <View style={styles.headerSpacer} />
-        </View>
-      </LinearGradient>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+      <StatusBar
+        barStyle={theme === "dark" ? "light-content" : "dark-content"}
+        backgroundColor={colors.background}
+      />
 
-      <View style={styles.mainContent}>
-        <ScrollView
-          style={styles.scrollContent}
-          showsVerticalScrollIndicator={false}
+      <View style={[styles.header, { borderBottomColor: colors.border }]}>
+        <TouchableOpacity
+          onPress={onBack}
+          style={[styles.backButton, { backgroundColor: colors.surfaceSecondary }]}
+          activeOpacity={0.7}
         >
-          {/* Profile Section */}
-          <View style={styles.section}>
-            {renderSectionHeader(
-              "Profile",
-              <User size={20} color={colors.primary} />
-            )}
+          <ChevronLeft size={20} color={colors.textPrimary} />
+        </TouchableOpacity>
+        <Text style={[styles.headerTitle, { color: colors.textPrimary }]}>Settings</Text>
+        <View style={styles.headerSpacer} />
+      </View>
 
-            {renderSettingItem(
-              <UserCheck size={20} color={colors.textSecondary} />,
-              user?.name || "User Name",
-              user?.email || "user@example.com",
-              () => showToast("Profile info", "info")
-            )}
-            {renderSettingItem(
-              <UserPenIcon size={20} color={colors.textSecondary} />,
-              "Edit Profile",
-              "Update your personal information",
-              () => setShowEditProfile(true)
-            )}
-          </View>
+      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+        {/* Profile Section */}
+        <View style={styles.section}>
+          <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>
+            Account
+          </Text>
+          {renderSettingItem(
+            <User size={18} color={colors.primary} />,
+            user?.name || "User Name",
+            user?.email || "user@example.com"
+          )}
+          {renderSettingItem(
+            <UserPen size={18} color={colors.textSecondary} />,
+            "Edit Profile",
+            "Update your personal information",
+            () => setShowEditProfile(true)
+          )}
+        </View>
 
-          {/* Appearance Section */}
-          <View style={styles.section}>
-            {renderSectionHeader(
-              "Appearance",
-              <SettingsIcon size={20} color={colors.primary} />
-            )}
-            {renderSettingItem(
-              theme === "dark" ? (
-                <Moon size={20} color={colors.textSecondary} />
-              ) : (
-                <Sun size={20} color={colors.textSecondary} />
-              ),
-              "Dark Mode",
-              "Switch between light and dark themes",
-              undefined,
-              <Switch
-                value={theme === "dark"}
-                onValueChange={toggleTheme}
-                trackColor={{
-                  false: colors.surfaceSecondary,
-                  true: colors.primary,
-                }}
-                thumbColor={colors.surface}
-              />
-            )}
-          </View>
+        {/* Appearance Section */}
+        <View style={styles.section}>
+          <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>
+            Appearance
+          </Text>
+          {renderSettingItem(
+            theme === "dark" ? (
+              <Moon size={18} color={colors.textSecondary} />
+            ) : (
+              <Sun size={18} color={colors.textSecondary} />
+            ),
+            "Dark Mode",
+            "Switch between light and dark themes",
+            undefined,
+            <Switch
+              value={theme === "dark"}
+              onValueChange={toggleTheme}
+              trackColor={{ false: colors.border, true: colors.primary }}
+              thumbColor={colors.white}
+            />
+          )}
+        </View>
 
-          {/* Security Section */}
-          <View style={styles.section}>
-            {renderSectionHeader(
-              "Security",
-              <Shield size={20} color={colors.primary} />
-            )}
-            {renderSettingItem(
-              <Fingerprint size={20} color={colors.textSecondary} />,
-              "Change Password",
-              "Update your account password",
-              () => setShowChangePassword(true)
-            )}
-          </View>
+        {/* Security Section */}
+        <View style={styles.section}>
+          <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>
+            Security
+          </Text>
+          {renderSettingItem(
+            <Shield size={18} color={colors.textSecondary} />,
+            "Change Password",
+            "Update your account password",
+            () => setShowChangePassword(true)
+          )}
+        </View>
 
-          {/* Data Section */}
-          <View style={styles.section}>
-            {renderSectionHeader(
-              "Data & Privacy",
-              <Calendar size={20} color={colors.primary} />
-            )}
-            {renderSettingItem(
-              <Calendar size={20} color={colors.textSecondary} />,
-              "Export Data",
-              "Download your payment history",
-              () => showToast("Data export coming soon", "info")
-            )}
-            {renderSettingItem(
-              <Trash2 size={20} color={colors.error} />,
-              "Delete Account",
-              "Permanently delete your account and data",
-              handleDeleteAccount,
-              undefined,
-              true
-            )}
-          </View>
+        {/* Data Section */}
+        <View style={styles.section}>
+          <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>
+            Data & Privacy
+          </Text>
+          {renderSettingItem(
+            <Calendar size={18} color={colors.textSecondary} />,
+            "Export Data",
+            "Download your payment history",
+            () => showToast("Data export coming soon", "info")
+          )}
+          {renderSettingItem(
+            <Trash2 size={18} color={colors.error} />,
+            "Delete Account",
+            "Permanently delete your account",
+            () => setShowDeleteAccount(true)
+          )}
+        </View>
 
-          {/* Support Section */}
-          <View style={styles.section}>
-            {renderSectionHeader(
-              "Support",
-              <HelpCircle size={20} color={colors.primary} />
-            )}
-            {renderSettingItem(
-              <HelpCircle size={20} color={colors.textSecondary} />,
-              "Help & Support",
-              "Get help with the app",
-              () => showToast("Support coming soon", "info")
-            )}
-            {renderSettingItem(
-              <Info size={20} color={colors.textSecondary} />,
-              "About PocketDue",
-              "Version 1.0.0",
-              () => showToast("About coming soon", "info")
-            )}
-          </View>
+        {/* Support Section */}
+        <View style={styles.section}>
+          <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>
+            Support
+          </Text>
+          {renderSettingItem(
+            <HelpCircle size={18} color={colors.textSecondary} />,
+            "Help & Support",
+            "Get help with the app",
+            () => setShowHelpDrawer(true)
+          )}
+          {renderSettingItem(
+            <Info size={18} color={colors.textSecondary} />,
+            "About PocketDue",
+            "Version 1.0.0",
+            () => setShowAboutDrawer(true)
+          )}
+        </View>
 
-  
-        </ScrollView>
-
-        {/* Fixed Logout Button */}
-        <View style={styles.logoutContainer}>
+        {/* Logout Button */}
+        <View style={styles.logoutSection}>
           <Button
-            onPress={handleLogout}
+            onPress={() => setShowLogoutDrawer(true)}
             variant="danger"
             size="lg"
-            style={styles.logoutButton}
+            fullWidth
+            icon={<LogOut size={18} color={colors.white} />}
           >
-            <View style={styles.logoutContent}>
-              <LogOut size={20} color={colors.surface} />
-              <Text style={[styles.logoutText, { color: colors.surface }]}>
-                Logout
-              </Text>
-            </View>
+            Logout
           </Button>
         </View>
-      </View>
+      </ScrollView>
+
+      {/* Logout Drawer */}
+      <Drawer
+        visible={showLogoutDrawer}
+        onClose={() => setShowLogoutDrawer(false)}
+        height={280}
+      >
+        <View style={styles.drawerContent}>
+          <View style={[styles.drawerIconContainer, { backgroundColor: colors.errorLight }]}>
+            <LogOut size={32} color={colors.error} />
+          </View>
+          <Text style={[styles.drawerTitle, { color: colors.textPrimary }]}>
+            Logout
+          </Text>
+          <Text style={[styles.drawerMessage, { color: colors.textSecondary }]}>
+            Are you sure you want to logout from your account?
+          </Text>
+          <Button
+            onPress={handleLogoutConfirm}
+            variant="danger"
+            size="lg"
+            fullWidth
+            icon={<LogOut size={18} color={colors.white} />}
+          >
+            Logout
+          </Button>
+        </View>
+      </Drawer>
+
+      {/* About Drawer */}
+      <Drawer
+        visible={showAboutDrawer}
+        onClose={() => setShowAboutDrawer(false)}
+        height={380}
+      >
+        <View style={styles.drawerContent}>
+          <View style={[styles.drawerIconContainer, { backgroundColor: colors.primaryLight }]}>
+            <Info size={32} color={colors.primary} />
+          </View>
+          <Text style={[styles.drawerTitle, { color: colors.textPrimary }]}>
+            About PocketDue
+          </Text>
+          <Text style={[styles.drawerMessage, { color: colors.textSecondary }]}>
+            PocketDue helps you track payments you need to make and receive. Stay organized and never miss a payment.
+          </Text>
+
+          <View style={styles.aboutInfo}>
+            <View style={[styles.aboutRow, { backgroundColor: colors.surface }]}>
+              <Text style={[styles.aboutLabel, { color: colors.textTertiary }]}>Version</Text>
+              <Text style={[styles.aboutValue, { color: colors.textPrimary }]}>1.0.0</Text>
+            </View>
+            <TouchableOpacity
+              style={[styles.aboutRow, { backgroundColor: colors.surface }]}
+              onPress={openWebsite}
+              activeOpacity={0.7}
+            >
+              <View style={styles.aboutRowLeft}>
+                <Globe size={16} color={colors.primary} />
+                <Text style={[styles.aboutLabel, { color: colors.textTertiary }]}>Developer</Text>
+              </View>
+              <View style={styles.aboutRowRight}>
+                <Text style={[styles.aboutValue, { color: colors.primary }]}>Nabin Khair</Text>
+                <ExternalLink size={14} color={colors.primary} />
+              </View>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Drawer>
+
+      {/* Help & Support Drawer */}
+      <Drawer
+        visible={showHelpDrawer}
+        onClose={() => setShowHelpDrawer(false)}
+        height={340}
+      >
+        <View style={styles.drawerContent}>
+          <View style={[styles.drawerIconContainer, { backgroundColor: colors.primaryLight }]}>
+            <HelpCircle size={32} color={colors.primary} />
+          </View>
+          <Text style={[styles.drawerTitle, { color: colors.textPrimary }]}>
+            Help & Support
+          </Text>
+          <Text style={[styles.drawerMessage, { color: colors.textSecondary }]}>
+            Need help? Have questions or feedback? Feel free to reach out!
+          </Text>
+
+          <TouchableOpacity
+            style={[styles.contactCard, { backgroundColor: colors.surface }]}
+            onPress={openEmail}
+            activeOpacity={0.7}
+          >
+            <View style={[styles.contactIcon, { backgroundColor: colors.primaryLight }]}>
+              <Mail size={20} color={colors.primary} />
+            </View>
+            <View style={styles.contactInfo}>
+              <Text style={[styles.contactLabel, { color: colors.textTertiary }]}>Email</Text>
+              <Text style={[styles.contactValue, { color: colors.primary }]}>nabinkhair12@gmail.com</Text>
+            </View>
+            <ExternalLink size={16} color={colors.textTertiary} />
+          </TouchableOpacity>
+        </View>
+      </Drawer>
 
       {/* Delete Account Modal */}
       <Modal
@@ -308,78 +363,42 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
         presentationStyle="pageSheet"
         onRequestClose={() => setShowDeleteAccount(false)}
       >
-        <View
-          style={[
-            styles.modalContainer,
-            { backgroundColor: colors.background },
-          ]}
-        >
-          <View style={styles.modalHeader}>
+        <SafeAreaView style={[styles.modalContainer, { backgroundColor: colors.background }]}>
+          <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
             <TouchableOpacity
               onPress={() => setShowDeleteAccount(false)}
-              style={styles.modalCloseButton}
+              style={[styles.backButton, { backgroundColor: colors.surfaceSecondary }]}
             >
-              <ChevronLeft size={24} color={colors.textPrimary} />
+              <ChevronLeft size={20} color={colors.textPrimary} />
             </TouchableOpacity>
-            <Text style={[styles.modalTitle, { color: colors.textPrimary }]}>
+            <Text style={[styles.headerTitle, { color: colors.textPrimary }]}>
               Delete Account
             </Text>
             <View style={styles.headerSpacer} />
           </View>
 
-          <ScrollView
-            style={styles.modalContent}
-            showsVerticalScrollIndicator={false}
-          >
-            <View style={styles.modalSection}>
-              <Text
-                style={[
-                  styles.modalSectionTitle,
-                  { color: colors.textPrimary },
-                ]}
-              >
+          <ScrollView style={styles.modalContent} showsVerticalScrollIndicator={false}>
+            <View style={[styles.warningBox, { backgroundColor: colors.errorLight }]}>
+              <Text style={[styles.warningTitle, { color: colors.error }]}>
                 Warning
               </Text>
-              <Text
-                style={[
-                  styles.modalSectionSubtitle,
-                  { color: colors.textSecondary },
-                ]}
-              >
-                This action cannot be undone. All your data will be permanently
-                deleted.
+              <Text style={[styles.warningText, { color: colors.error }]}>
+                This action cannot be undone. All your data will be permanently deleted.
               </Text>
             </View>
 
-            <View style={styles.modalSection}>
-              <Text
-                style={[
-                  styles.modalSectionTitle,
-                  { color: colors.textPrimary },
-                ]}
-              >
+            <View style={styles.formSection}>
+              <Text style={[styles.formLabel, { color: colors.textPrimary }]}>
                 Confirm Password
               </Text>
-              <Text
-                style={[
-                  styles.modalSectionSubtitle,
-                  { color: colors.textSecondary },
-                ]}
-              >
+              <Text style={[styles.formHint, { color: colors.textSecondary }]}>
                 Enter your password to confirm account deletion
               </Text>
 
-              <View
-                style={[
-                  styles.modalInputContainer,
-                  { backgroundColor: colors.surface },
-                ]}
-              >
-                <View style={styles.modalInputIcon}>
-                  <Lock size={20} color={colors.textSecondary} />
-                </View>
+              <View style={[styles.inputContainer, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+                <Lock size={18} color={colors.textTertiary} />
                 <TextInput
-                  style={[styles.modalInput, { color: colors.textPrimary }]}
+                  style={[styles.input, { color: colors.textPrimary }]}
                   placeholder="Enter your password"
                   placeholderTextColor={colors.textTertiary}
                   value={deletePassword}
@@ -387,14 +406,11 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
                   secureTextEntry={!showDeletePassword}
                   autoCapitalize="none"
                 />
-                <TouchableOpacity
-                  onPress={() => setShowDeletePassword(!showDeletePassword)}
-                  style={styles.modalEyeButton}
-                >
+                <TouchableOpacity onPress={() => setShowDeletePassword(!showDeletePassword)}>
                   {showDeletePassword ? (
-                    <EyeOff size={20} color={colors.textSecondary} />
+                    <EyeOff size={18} color={colors.textTertiary} />
                   ) : (
-                    <Eye size={20} color={colors.textSecondary} />
+                    <Eye size={18} color={colors.textTertiary} />
                   )}
                 </TouchableOpacity>
               </View>
@@ -405,36 +421,24 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
                 onPress={() => setShowDeleteAccount(false)}
                 variant="secondary"
                 size="lg"
-                style={styles.modalCancelButton}
+                fullWidth
               >
-                <Text
-                  style={[
-                    styles.modalButtonText,
-                    { color: colors.textPrimary },
-                  ]}
-                >
-                  Cancel
-                </Text>
+                Cancel
               </Button>
-
               <Button
                 onPress={confirmDeleteAccount}
                 variant="danger"
                 size="lg"
-                style={styles.modalDeleteButton}
-                disabled={deleteLoading}
+                fullWidth
+                loading={deleteLoading}
               >
-                <Text
-                  style={[styles.modalButtonText, { color: colors.surface }]}
-                >
-                  {deleteLoading ? "Deleting..." : "Delete Account"}
-                </Text>
+                Delete Account
               </Button>
             </View>
           </ScrollView>
-        </View>
+        </SafeAreaView>
       </Modal>
-    </View>
+    </SafeAreaView>
   );
 };
 
@@ -443,181 +447,196 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   header: {
-    paddingTop: 50,
-    paddingBottom: 20,
-    paddingHorizontal: 20,
-  },
-  headerContent: {
     flexDirection: "row",
     alignItems: "center",
+    paddingHorizontal: spacing.xl,
+    paddingVertical: spacing.lg,
+    borderBottomWidth: 1,
+    gap: spacing.md,
   },
   backButton: {
-    padding: 8,
-    marginRight: 16,
+    width: 36,
+    height: 36,
+    borderRadius: radius.md,
+    justifyContent: "center",
+    alignItems: "center",
   },
-  title: {
-    fontSize: 24,
-    fontWeight: "bold",
+  headerTitle: {
+    ...typography.h2,
   },
   headerSpacer: {
     flex: 1,
   },
-  mainContent: {
-    flex: 1,
-    paddingHorizontal: 20,
-    paddingTop: 20,
-  },
-  scrollContent: {
-    flex: 1,
-  },
   content: {
     flex: 1,
-    paddingHorizontal: 20,
-    paddingTop: 20,
   },
   section: {
-    marginBottom: 20,
-  },
-  sectionHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 16,
-  },
-  sectionIcon: {
-    marginRight: 12,
+    paddingHorizontal: spacing.xl,
+    paddingTop: spacing.xl,
   },
   sectionTitle: {
-    fontSize: 18,
-    fontWeight: "600",
+    ...typography.captionMedium,
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+    marginBottom: spacing.md,
   },
   settingItem: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 16,
-    paddingVertical: 16,
-    borderRadius: 12,
-    marginBottom: 8,
-    shadowOpacity: 0,
-  },
-  settingLeft: {
-    flexDirection: "row",
-    alignItems: "center",
-    flex: 1,
+    padding: spacing.lg,
+    borderRadius: radius.md,
+    marginBottom: spacing.sm,
+    gap: spacing.md,
   },
   settingIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 36,
+    height: 36,
+    borderRadius: radius.sm,
     justifyContent: "center",
     alignItems: "center",
-    marginRight: 12,
   },
   settingText: {
     flex: 1,
   },
   settingTitle: {
-    fontSize: 16,
-    fontWeight: "500",
-    marginBottom: 2,
+    ...typography.bodyMedium,
   },
   settingSubtitle: {
-    fontSize: 14,
+    ...typography.caption,
+    marginTop: 2,
   },
-  settingRight: {
-    marginLeft: 12,
+  logoutSection: {
+    padding: spacing.xl,
+    paddingBottom: spacing.xxxl,
   },
-  logoutContainer: {
-    paddingTop: 20,
-    paddingBottom: 40,
+  // Drawer styles
+  drawerContent: {
+    paddingHorizontal: spacing.xl,
+    alignItems: "center",
   },
-  logoutButton: {
+  drawerIconContainer: {
+    width: 64,
+    height: 64,
+    borderRadius: radius.full,
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: spacing.lg,
+  },
+  drawerTitle: {
+    ...typography.h2,
+    marginBottom: spacing.sm,
+    textAlign: "center",
+  },
+  drawerMessage: {
+    ...typography.body,
+    textAlign: "center",
+    marginBottom: spacing.xl,
+  },
+  aboutInfo: {
+    width: "100%",
+    gap: spacing.sm,
+    marginBottom: spacing.lg,
+  },
+  aboutRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    padding: spacing.md,
+    borderRadius: radius.md,
+  },
+  aboutRowLeft: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
+    gap: spacing.sm,
   },
-  logoutContent: {
+  aboutRowRight: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
+    gap: spacing.xs,
   },
-  logoutText: {
-    fontSize: 16,
-    fontWeight: "600",
+  aboutLabel: {
+    ...typography.caption,
+  },
+  aboutValue: {
+    ...typography.bodyMedium,
+  },
+  contactCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    width: "100%",
+    padding: spacing.lg,
+    borderRadius: radius.lg,
+    gap: spacing.md,
+  },
+  contactIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: radius.md,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  contactInfo: {
+    flex: 1,
+  },
+  contactLabel: {
+    ...typography.caption,
+  },
+  contactValue: {
+    ...typography.bodyMedium,
   },
   // Modal styles
   modalContainer: {
     flex: 1,
-    backgroundColor: "transparent",
   },
   modalHeader: {
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: 20,
-    paddingTop: 50,
-    paddingBottom: 20
-  },
-  modalCloseButton: {
-    padding: 8,
-    marginRight: 16,
-  },
-  modalTitle: {
-    fontSize: 20,
-    fontWeight: "bold",
+    paddingHorizontal: spacing.xl,
+    paddingVertical: spacing.lg,
+    borderBottomWidth: 1,
+    gap: spacing.md,
   },
   modalContent: {
     flex: 1,
-    paddingHorizontal: 20,
-    paddingTop: 20,
+    padding: spacing.xl,
   },
-  modalSection: {
-    marginBottom: 24,
+  warningBox: {
+    padding: spacing.lg,
+    borderRadius: radius.md,
+    marginBottom: spacing.xxl,
   },
-  modalSectionTitle: {
-    fontSize: 18,
-    fontWeight: "600",
-    marginBottom: 8,
+  warningTitle: {
+    ...typography.bodySemibold,
+    marginBottom: spacing.xs,
   },
-  modalSectionSubtitle: {
-    fontSize: 14,
-    lineHeight: 20,
+  warningText: {
+    ...typography.caption,
   },
-  modalInputContainer: {
+  formSection: {
+    marginBottom: spacing.xxl,
+  },
+  formLabel: {
+    ...typography.bodySemibold,
+    marginBottom: spacing.xs,
+  },
+  formHint: {
+    ...typography.caption,
+    marginBottom: spacing.md,
+  },
+  inputContainer: {
     flexDirection: "row",
     alignItems: "center",
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 16,
-    marginTop: 12,
-    gap: 12
+    borderRadius: radius.md,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+    borderWidth: 1,
+    gap: spacing.md,
   },
-  modalInputIcon: {
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  modalInput: {
+  input: {
     flex: 1,
-    fontSize: 16,
-  },
-  modalEyeButton: {
-    padding: 4,
+    ...typography.body,
   },
   modalActions: {
-    flexDirection: "row",
-    gap: 12,
-    marginTop: 32,
-    marginBottom: 40,
-  },
-  modalCancelButton: {
-    flex: 1,
-  },
-  modalDeleteButton: {
-    flex: 1,
-  },
-  modalButtonText: {
-    fontSize: 16,
-    fontWeight: "600",
+    gap: spacing.md,
   },
 });

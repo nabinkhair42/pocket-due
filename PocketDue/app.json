@@ -19,7 +19,9 @@
         "CFBundleURLTypes": [
           {
             "CFBundleURLName": "pocketdue",
-            "CFBundleURLSchemes": ["pocketdue"]
+            "CFBundleURLSchemes": [
+              "pocketdue"
+            ]
           }
         ]
       }
@@ -39,12 +41,18 @@
               "scheme": "pocketdue"
             }
           ],
-          "category": ["BROWSABLE", "DEFAULT"]
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ]
         }
       ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "plugins": [
+      "expo-web-browser"
+    ]
   }
 }

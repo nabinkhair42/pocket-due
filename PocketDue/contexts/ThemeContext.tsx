@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
+import { useColorScheme } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 export type Theme = "light" | "dark";
@@ -24,7 +25,8 @@ interface ThemeProviderProps {
 }
 
 export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
-  const [theme, setThemeState] = useState<Theme>("light");
+  const systemColorScheme = useColorScheme();
+  const [theme, setThemeState] = useState<Theme>(systemColorScheme === "dark" ? "dark" : "light");
   const [isLoaded, setIsLoaded] = useState(false);
 
   useEffect(() => {
@@ -37,6 +39,7 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
       if (savedTheme === "dark" || savedTheme === "light") {
         setThemeState(savedTheme);
       }
+      // If no saved theme, keep the system default (already set in useState)
     } catch (error) {
     } finally {
       setIsLoaded(true);

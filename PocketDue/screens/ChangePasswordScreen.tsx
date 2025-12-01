@@ -6,11 +6,12 @@ import {
   TouchableOpacity,
   StyleSheet,
   ScrollView,
-  Alert,
+  StatusBar,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { ChevronLeft, Lock, Eye, EyeOff, Save } from "lucide-react-native";
 import { useTheme } from "../contexts/ThemeContext";
-import { getThemeColors } from "../lib/theme";
+import { getThemeColors, spacing, radius, typography } from "../lib/theme";
 import { useUser } from "../hooks/useUser";
 import { Button } from "../components/Button";
 
@@ -51,15 +52,14 @@ export const ChangePasswordScreen: React.FC<ChangePasswordScreenProps> = ({
   };
 
   const renderPasswordField = (
-    icon: React.ReactNode,
     placeholder: string,
     value: string,
     onChangeText: (text: string) => void,
     showPassword: boolean,
     onToggleVisibility: () => void
   ) => (
-    <View style={[styles.inputContainer, { backgroundColor: colors.surface }]}>
-      <View style={styles.inputIcon}>{icon}</View>
+    <View style={[styles.inputContainer, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+      <Lock size={18} color={colors.textTertiary} />
       <TextInput
         style={[styles.input, { color: colors.textPrimary }]}
         placeholder={placeholder}
@@ -69,24 +69,32 @@ export const ChangePasswordScreen: React.FC<ChangePasswordScreenProps> = ({
         secureTextEntry={!showPassword}
         autoCapitalize="none"
       />
-      <TouchableOpacity onPress={onToggleVisibility} style={styles.eyeButton}>
+      <TouchableOpacity onPress={onToggleVisibility}>
         {showPassword ? (
-          <EyeOff size={20} color={colors.textSecondary} />
+          <EyeOff size={18} color={colors.textTertiary} />
         ) : (
-          <Eye size={20} color={colors.textSecondary} />
+          <Eye size={18} color={colors.textTertiary} />
         )}
       </TouchableOpacity>
     </View>
   );
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
-      {/* Header */}
-      <View style={[styles.header, { backgroundColor: colors.surface }]}>
-        <TouchableOpacity onPress={onBack} style={styles.backButton}>
-          <ChevronLeft size={24} color={colors.textPrimary} />
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+      <StatusBar
+        barStyle={theme === "dark" ? "light-content" : "dark-content"}
+        backgroundColor={colors.background}
+      />
+
+      <View style={[styles.header, { borderBottomColor: colors.border }]}>
+        <TouchableOpacity
+          onPress={onBack}
+          style={[styles.backButton, { backgroundColor: colors.surfaceSecondary }]}
+          activeOpacity={0.7}
+        >
+          <ChevronLeft size={20} color={colors.textPrimary} />
         </TouchableOpacity>
-        <Text style={[styles.title, { color: colors.textPrimary }]}>
+        <Text style={[styles.headerTitle, { color: colors.textPrimary }]}>
           Change Password
         </Text>
         <View style={styles.headerSpacer} />
@@ -94,50 +102,58 @@ export const ChangePasswordScreen: React.FC<ChangePasswordScreenProps> = ({
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>
+          <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>
             Password Security
           </Text>
-          <Text
-            style={[styles.sectionSubtitle, { color: colors.textSecondary }]}
-          >
+          <Text style={[styles.sectionHint, { color: colors.textTertiary }]}>
             Update your password to keep your account secure
           </Text>
         </View>
 
         <View style={styles.form}>
-          {renderPasswordField(
-            <Lock size={20} color={colors.textSecondary} />,
-            "Current Password",
-            formData.currentPassword,
-            (text) => setFormData({ ...formData, currentPassword: text }),
-            showCurrentPassword,
-            () => setShowCurrentPassword(!showCurrentPassword)
-          )}
+          <View style={styles.inputGroup}>
+            <Text style={[styles.label, { color: colors.textPrimary }]}>
+              Current Password
+            </Text>
+            {renderPasswordField(
+              "Enter current password",
+              formData.currentPassword,
+              (text) => setFormData({ ...formData, currentPassword: text }),
+              showCurrentPassword,
+              () => setShowCurrentPassword(!showCurrentPassword)
+            )}
+          </View>
 
-          {renderPasswordField(
-            <Lock size={20} color={colors.textSecondary} />,
-            "New Password",
-            formData.newPassword,
-            (text) => setFormData({ ...formData, newPassword: text }),
-            showNewPassword,
-            () => setShowNewPassword(!showNewPassword)
-          )}
+          <View style={styles.inputGroup}>
+            <Text style={[styles.label, { color: colors.textPrimary }]}>
+              New Password
+            </Text>
+            {renderPasswordField(
+              "Enter new password",
+              formData.newPassword,
+              (text) => setFormData({ ...formData, newPassword: text }),
+              showNewPassword,
+              () => setShowNewPassword(!showNewPassword)
+            )}
+          </View>
 
-          {renderPasswordField(
-            <Lock size={20} color={colors.textSecondary} />,
-            "Confirm New Password",
-            formData.confirmPassword,
-            (text) => setFormData({ ...formData, confirmPassword: text }),
-            showConfirmPassword,
-            () => setShowConfirmPassword(!showConfirmPassword)
-          )}
+          <View style={styles.inputGroup}>
+            <Text style={[styles.label, { color: colors.textPrimary }]}>
+              Confirm Password
+            </Text>
+            {renderPasswordField(
+              "Confirm new password",
+              formData.confirmPassword,
+              (text) => setFormData({ ...formData, confirmPassword: text }),
+              showConfirmPassword,
+              () => setShowConfirmPassword(!showConfirmPassword)
+            )}
+          </View>
         </View>
 
-        <View style={styles.requirements}>
-          <Text
-            style={[styles.requirementsTitle, { color: colors.textPrimary }]}
-          >
-            Password Requirements:
+        <View style={[styles.requirements, { backgroundColor: colors.surfaceSecondary }]}>
+          <Text style={[styles.requirementsTitle, { color: colors.textPrimary }]}>
+            Password Requirements
           </Text>
           <Text style={[styles.requirement, { color: colors.textSecondary }]}>
             • At least 6 characters long
@@ -152,19 +168,15 @@ export const ChangePasswordScreen: React.FC<ChangePasswordScreenProps> = ({
             onPress={handleSave}
             variant="primary"
             size="lg"
-            style={styles.saveButton}
-            disabled={loading}
+            fullWidth
+            loading={loading}
+            icon={<Save size={18} color={colors.white} />}
           >
-            <View style={styles.saveContent}>
-              <Save size={20} color={colors.surface} />
-              <Text style={[styles.saveText, { color: colors.surface }]}>
-                {loading ? "Changing..." : "Change Password"}
-              </Text>
-            </View>
+            Change Password
           </Button>
         </View>
       </ScrollView>
-    </View>
+    </SafeAreaView>
   );
 };
 
@@ -175,95 +187,76 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: 20,
-    paddingTop: 50,
-    paddingBottom: 20
+    paddingHorizontal: spacing.xl,
+    paddingVertical: spacing.lg,
+    borderBottomWidth: 1,
+    gap: spacing.md,
   },
   backButton: {
-    padding: 8,
-    marginRight: 16,
+    width: 36,
+    height: 36,
+    borderRadius: radius.md,
+    justifyContent: "center",
+    alignItems: "center",
   },
-  title: {
-    fontSize: 20,
-    fontWeight: "bold",
+  headerTitle: {
+    ...typography.h2,
   },
   headerSpacer: {
     flex: 1,
   },
   content: {
     flex: 1,
-    paddingHorizontal: 20,
-    paddingTop: 20,
+    padding: spacing.xl,
   },
   section: {
-    marginBottom: 24,
+    marginBottom: spacing.xxl,
   },
   sectionTitle: {
-    fontSize: 18,
-    fontWeight: "600",
-    marginBottom: 8,
+    ...typography.captionMedium,
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+    marginBottom: spacing.xs,
   },
-  sectionSubtitle: {
-    fontSize: 14,
-    lineHeight: 20,
+  sectionHint: {
+    ...typography.caption,
   },
   form: {
-    marginBottom: 24,
+    gap: spacing.lg,
+  },
+  inputGroup: {
+    gap: spacing.sm,
+  },
+  label: {
+    ...typography.bodyMedium,
   },
   inputContainer: {
     flexDirection: "row",
     alignItems: "center",
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 16,
-    marginBottom: 16,
-    gap: 12
-  },
-  inputIcon: {
-    justifyContent: "center",
-    alignItems: "center",
+    borderRadius: radius.md,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+    borderWidth: 1,
+    gap: spacing.md,
   },
   input: {
     flex: 1,
-    fontSize: 16,
-  },
-  eyeButton: {
-    padding: 4,
+    ...typography.body,
   },
   requirements: {
-    marginBottom: 32,
-    padding: 16,
-    borderRadius: 12,
-    backgroundColor: "rgba(59, 130, 246, 0.1)",
+    padding: spacing.lg,
+    borderRadius: radius.md,
+    marginTop: spacing.xxl,
   },
   requirementsTitle: {
-    fontSize: 14,
-    fontWeight: "600",
-    marginBottom: 8,
+    ...typography.bodyMedium,
+    marginBottom: spacing.sm,
   },
   requirement: {
-    fontSize: 12,
-    lineHeight: 16,
-    marginBottom: 4,
+    ...typography.caption,
+    marginTop: spacing.xs,
   },
   actions: {
-    marginBottom: 40,
-  },
-  saveButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-  },
-  saveContent: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-  },
-  saveText: {
-    fontSize: 16,
-    fontWeight: "600",
-    lineHeight: 20,
+    marginTop: spacing.xxl,
   },
 });

@@ -1,7 +1,8 @@
 import React from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { ArrowUpRight, ArrowDownLeft } from "lucide-react-native";
 import { useTheme } from "../contexts/ThemeContext";
-import { getThemeColors } from "../lib/theme";
+import { getThemeColors, spacing, radius, typography, shadows } from "../lib/theme";
 
 interface TabsProps {
   currentTab: "to_pay" | "to_receive";
@@ -12,63 +13,48 @@ export const Tabs: React.FC<TabsProps> = ({ currentTab, onTabChange }) => {
   const { theme } = useTheme();
   const colors = getThemeColors(theme);
 
-  return (
-    <View
-      style={[styles.container, { backgroundColor: colors.surfaceSecondary }]}
-    >
-      <TouchableOpacity
-        style={[
-          styles.tab,
-          currentTab === "to_pay" && [
-            styles.activeTab,
-            {
-              backgroundColor: colors.cardBackground,
-              shadowColor: colors.cardShadow,
-            },
-          ],
-        ]}
-        onPress={() => onTabChange("to_pay")}
-      >
-        <Text
-          style={[
-            styles.tabText,
-            { color: colors.textSecondary },
-            currentTab === "to_pay" && [
-              styles.activeTabText,
-              { color: colors.textPrimary },
-            ],
-          ]}
-        >
-          To Pay
-        </Text>
-      </TouchableOpacity>
+  const tabs = [
+    { id: "to_pay" as const, label: "To Pay", icon: ArrowUpRight },
+    { id: "to_receive" as const, label: "To Receive", icon: ArrowDownLeft },
+  ];
 
-      <TouchableOpacity
-        style={[
-          styles.tab,
-          currentTab === "to_receive" && [
-            styles.activeTab,
-            {
-              backgroundColor: colors.cardBackground,
-              shadowColor: colors.cardShadow,
-            },
-          ],
-        ]}
-        onPress={() => onTabChange("to_receive")}
-      >
-        <Text
-          style={[
-            styles.tabText,
-            { color: colors.textSecondary },
-            currentTab === "to_receive" && [
-              styles.activeTabText,
-              { color: colors.textPrimary },
-            ],
-          ]}
-        >
-          To Receive
-        </Text>
-      </TouchableOpacity>
+  return (
+    <View style={[styles.container, { backgroundColor: colors.surfaceSecondary }]}>
+      {tabs.map((tab) => {
+        const isActive = currentTab === tab.id;
+        const Icon = tab.icon;
+
+        return (
+          <TouchableOpacity
+            key={tab.id}
+            style={[
+              styles.tab,
+              isActive && [
+                styles.activeTab,
+                { backgroundColor: colors.surface },
+                shadows.sm,
+              ],
+            ]}
+            onPress={() => onTabChange(tab.id)}
+            activeOpacity={0.7}
+          >
+            <Icon
+              size={16}
+              color={isActive ? colors.primary : colors.textTertiary}
+            />
+            <Text
+              style={[
+                styles.tabText,
+                { color: colors.textTertiary },
+                isActive && { color: colors.textPrimary },
+              ]}
+              numberOfLines={1}
+            >
+              {tab.label}
+            </Text>
+          </TouchableOpacity>
+        );
+      })}
     </View>
   );
 };
@@ -76,29 +62,23 @@ export const Tabs: React.FC<TabsProps> = ({ currentTab, onTabChange }) => {
 const styles = StyleSheet.create({
   container: {
     flexDirection: "row",
-    borderRadius: 12,
-    padding: 4,
-    marginHorizontal: 16,
-    marginVertical: 16,
+    borderRadius: radius.md,
+    padding: spacing.xs,
+    marginTop: spacing.lg,
+    marginBottom: spacing.md,
   },
   tab: {
     flex: 1,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 8,
+    flexDirection: "row",
     alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.sm,
+    borderRadius: radius.sm,
+    gap: spacing.xs,
   },
-  activeTab: {
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
-  },
+  activeTab: {},
   tabText: {
-    fontSize: 16,
-    fontWeight: "500",
-  },
-  activeTabText: {
-    fontWeight: "600",
+    ...typography.bodyMedium,
   },
 });

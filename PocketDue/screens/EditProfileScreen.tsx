@@ -6,11 +6,12 @@ import {
   TouchableOpacity,
   StyleSheet,
   ScrollView,
-  Alert,
+  StatusBar,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { ChevronLeft, User, Mail, Save } from "lucide-react-native";
 import { useTheme } from "../contexts/ThemeContext";
-import { getThemeColors } from "../lib/theme";
+import { getThemeColors, spacing, radius, typography } from "../lib/theme";
 import { useUser } from "../hooks/useUser";
 import { Button } from "../components/Button";
 
@@ -45,35 +46,22 @@ export const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
     }
   };
 
-  const renderInputField = (
-    icon: React.ReactNode,
-    placeholder: string,
-    value: string,
-    onChangeText: (text: string) => void,
-    keyboardType: "default" | "email-address" = "default"
-  ) => (
-    <View style={[styles.inputContainer, { backgroundColor: colors.surface }]}>
-      <View style={styles.inputIcon}>{icon}</View>
-      <TextInput
-        style={[styles.input, { color: colors.textPrimary }]}
-        placeholder={placeholder}
-        placeholderTextColor={colors.textTertiary}
-        value={value}
-        onChangeText={onChangeText}
-        keyboardType={keyboardType}
-        autoCapitalize="words"
-      />
-    </View>
-  );
-
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
-      {/* Header */}
-      <View style={[styles.header, { backgroundColor: colors.surface }]}>
-        <TouchableOpacity onPress={onBack} style={styles.backButton}>
-          <ChevronLeft size={24} color={colors.textPrimary} />
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+      <StatusBar
+        barStyle={theme === "dark" ? "light-content" : "dark-content"}
+        backgroundColor={colors.background}
+      />
+
+      <View style={[styles.header, { borderBottomColor: colors.border }]}>
+        <TouchableOpacity
+          onPress={onBack}
+          style={[styles.backButton, { backgroundColor: colors.surfaceSecondary }]}
+          activeOpacity={0.7}
+        >
+          <ChevronLeft size={20} color={colors.textPrimary} />
         </TouchableOpacity>
-        <Text style={[styles.title, { color: colors.textPrimary }]}>
+        <Text style={[styles.headerTitle, { color: colors.textPrimary }]}>
           Edit Profile
         </Text>
         <View style={styles.headerSpacer} />
@@ -81,31 +69,49 @@ export const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>
+          <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>
             Personal Information
           </Text>
-          <Text
-            style={[styles.sectionSubtitle, { color: colors.textSecondary }]}
-          >
+          <Text style={[styles.sectionHint, { color: colors.textTertiary }]}>
             Update your name and email address
           </Text>
         </View>
 
         <View style={styles.form}>
-          {renderInputField(
-            <User size={20} color={colors.textSecondary} />,
-            "Full Name",
-            formData.name,
-            (text) => setFormData({ ...formData, name: text })
-          )}
+          <View style={styles.inputGroup}>
+            <Text style={[styles.label, { color: colors.textPrimary }]}>
+              Full Name
+            </Text>
+            <View style={[styles.inputContainer, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+              <User size={18} color={colors.textTertiary} />
+              <TextInput
+                style={[styles.input, { color: colors.textPrimary }]}
+                placeholder="Enter your full name"
+                placeholderTextColor={colors.textTertiary}
+                value={formData.name}
+                onChangeText={(text) => setFormData({ ...formData, name: text })}
+                autoCapitalize="words"
+              />
+            </View>
+          </View>
 
-          {renderInputField(
-            <Mail size={20} color={colors.textSecondary} />,
-            "Email Address",
-            formData.email,
-            (text) => setFormData({ ...formData, email: text }),
-            "email-address"
-          )}
+          <View style={styles.inputGroup}>
+            <Text style={[styles.label, { color: colors.textPrimary }]}>
+              Email Address
+            </Text>
+            <View style={[styles.inputContainer, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+              <Mail size={18} color={colors.textTertiary} />
+              <TextInput
+                style={[styles.input, { color: colors.textPrimary }]}
+                placeholder="Enter your email"
+                placeholderTextColor={colors.textTertiary}
+                value={formData.email}
+                onChangeText={(text) => setFormData({ ...formData, email: text })}
+                keyboardType="email-address"
+                autoCapitalize="none"
+              />
+            </View>
+          </View>
         </View>
 
         <View style={styles.actions}>
@@ -113,19 +119,15 @@ export const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
             onPress={handleSave}
             variant="primary"
             size="lg"
-            style={styles.saveButton}
-            disabled={loading}
+            fullWidth
+            loading={loading}
+            icon={<Save size={18} color={colors.white} />}
           >
-            <View style={styles.saveContent}>
-              <Save size={20} color={colors.surface} />
-              <Text style={[styles.saveText, { color: colors.surface }]}>
-                {loading ? "Saving..." : "Save Changes"}
-              </Text>
-            </View>
+            Save Changes
           </Button>
         </View>
       </ScrollView>
-    </View>
+    </SafeAreaView>
   );
 };
 
@@ -136,76 +138,63 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: 20,
-    paddingTop: 50,
-    paddingBottom: 20
+    paddingHorizontal: spacing.xl,
+    paddingVertical: spacing.lg,
+    borderBottomWidth: 1,
+    gap: spacing.md,
   },
   backButton: {
-    padding: 8,
-    marginRight: 16,
+    width: 36,
+    height: 36,
+    borderRadius: radius.md,
+    justifyContent: "center",
+    alignItems: "center",
   },
-  title: {
-    fontSize: 20,
-    fontWeight: "bold",
+  headerTitle: {
+    ...typography.h2,
   },
   headerSpacer: {
     flex: 1,
   },
   content: {
     flex: 1,
-    paddingHorizontal: 20,
-    paddingTop: 20,
+    padding: spacing.xl,
   },
   section: {
-    marginBottom: 24,
+    marginBottom: spacing.xxl,
   },
   sectionTitle: {
-    fontSize: 18,
-    fontWeight: "600",
-    marginBottom: 8,
+    ...typography.captionMedium,
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+    marginBottom: spacing.xs,
   },
-  sectionSubtitle: {
-    fontSize: 14,
-    lineHeight: 20,
+  sectionHint: {
+    ...typography.caption,
   },
   form: {
-    marginBottom: 32,
+    gap: spacing.lg,
+  },
+  inputGroup: {
+    gap: spacing.sm,
+  },
+  label: {
+    ...typography.bodyMedium,
   },
   inputContainer: {
     flexDirection: "row",
     alignItems: "center",
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 16,
-    marginBottom: 16,
-    gap: 12
-  },
-  inputIcon: {
-    justifyContent: "center",
-    alignItems: "center",
+    borderRadius: radius.md,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+    borderWidth: 1,
+    gap: spacing.md,
   },
   input: {
     flex: 1,
-    fontSize: 16,
+    ...typography.body,
   },
   actions: {
-    marginBottom: 40,
-  },
-  saveButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-  },
-  saveContent: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-  },
-  saveText: {
-    fontSize: 16,
-    fontWeight: "600",
-    lineHeight: 20,
+    marginTop: spacing.xxxl,
   },
 });
