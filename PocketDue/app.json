@@ -65,6 +65,12 @@
     },
     "plugins": [
       "expo-web-browser"
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "5da67503-9fd6-4a22-b42a-91481b81810e"
+      }
+    },
+    "owner": "nabinkhair12"
   }
 }
