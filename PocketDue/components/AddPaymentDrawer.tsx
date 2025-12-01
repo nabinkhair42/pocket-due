@@ -47,7 +47,6 @@ export const AddPaymentDrawer: React.FC<AddPaymentDrawerProps> = ({
   });
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [previousUsers, setPreviousUsers] = useState<string[]>([]);
-  const [loadingUsers, setLoadingUsers] = useState(false);
 
   // Dropdown state
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -90,15 +89,12 @@ export const AddPaymentDrawer: React.FC<AddPaymentDrawerProps> = ({
 
   const loadPreviousUsers = async () => {
     try {
-      setLoadingUsers(true);
       const response = await apiService.getPreviousUsers();
       if (response.success && response.data?.previousUsers) {
         setPreviousUsers(response.data.previousUsers);
       }
     } catch (error) {
-      console.error("Error loading previous users:", error);
-    } finally {
-      setLoadingUsers(false);
+      // Silently fail - previous users are optional
     }
   };
 

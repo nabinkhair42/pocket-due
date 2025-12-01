@@ -27,18 +27,25 @@ export const useAuth = () => {
 
   // Load current user on mount
   useEffect(() => {
+    let isMounted = true;
+
     const loadCurrentUser = async () => {
       try {
-        const currentUser = await getCurrentUser();
-        if (currentUser) {
-          setUser(currentUser);
+        const result = await apiService.getCurrentUser();
+        if (isMounted && result.success && result.data?.user) {
+          setUser(result.data.user);
         }
       } catch (error) {
+        // Silently fail - user will be redirected to auth
       }
     };
 
     loadCurrentUser();
-  }, [getCurrentUser]);
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const register = useCallback(
     async (data: RegisterRequest): Promise<ApiResponse<AuthResponse>> => {

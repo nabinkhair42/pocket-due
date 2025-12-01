@@ -176,12 +176,9 @@ class ApiService {
   }
 
   async getPreviousUsers(): Promise<ApiResponse<{ previousUsers: string[] }>> {
-    console.log("Making getPreviousUsers API call...");
-    const response = await this.makeRequest<{ previousUsers: string[] }>(
+    return this.makeRequest<{ previousUsers: string[] }>(
       "/payments/previous-users"
     );
-    console.log("getPreviousUsers response:", response);
-    return response;
   }
 
   async getPaymentSummaries(): Promise<
