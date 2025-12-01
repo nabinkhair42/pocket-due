@@ -1,6 +1,6 @@
-import { CheckCircle2, AlertCircle, Info } from "lucide-react-native";
+import { Check, X, Info } from "lucide-react-native";
 import React, { useEffect, useRef } from "react";
-import { Animated, StyleSheet, Text, View, TouchableOpacity, Modal } from "react-native";
+import { Animated, Platform, StyleSheet, Text, TouchableOpacity } from "react-native";
 import { useTheme } from "../contexts/ThemeContext";
 import { getThemeColors, spacing, radius, typography } from "../lib/theme";
 
@@ -23,24 +23,20 @@ export const Toast: React.FC<ToastProps> = ({
 }) => {
   const { theme } = useTheme();
   const colors = getThemeColors(theme);
-  const translateY = useRef(new Animated.Value(-100)).current;
-  const opacity = useRef(new Animated.Value(0)).current;
+  const translateY = useRef(new Animated.Value(100)).current;
+
+  // Safe bottom padding for different platforms
+  const bottomPadding = Platform.OS === "ios" ? 34 : 16;
 
   useEffect(() => {
     if (visible) {
-      Animated.parallel([
-        Animated.spring(translateY, {
-          toValue: 0,
-          useNativeDriver: true,
-          damping: 15,
-          stiffness: 150,
-        }),
-        Animated.timing(opacity, {
-          toValue: 1,
-          duration: 200,
-          useNativeDriver: true,
-        }),
-      ]).start();
+      // Slide up from bottom
+      Animated.spring(translateY, {
+        toValue: 0,
+        useNativeDriver: true,
+        damping: 20,
+        stiffness: 300,
+      }).start();
 
       const timer = setTimeout(() => {
         hideToast();
@@ -48,24 +44,16 @@ export const Toast: React.FC<ToastProps> = ({
 
       return () => clearTimeout(timer);
     } else {
-      translateY.setValue(-100);
-      opacity.setValue(0);
+      translateY.setValue(100);
     }
   }, [visible]);
 
   const hideToast = () => {
-    Animated.parallel([
-      Animated.timing(translateY, {
-        toValue: -100,
-        duration: 250,
-        useNativeDriver: true,
-      }),
-      Animated.timing(opacity, {
-        toValue: 0,
-        duration: 250,
-        useNativeDriver: true,
-      }),
-    ]).start(() => {
+    Animated.timing(translateY, {
+      toValue: 100,
+      duration: 200,
+      useNativeDriver: true,
+    }).start(() => {
       onClose();
     });
   };
@@ -74,89 +62,68 @@ export const Toast: React.FC<ToastProps> = ({
     switch (variant) {
       case "success":
         return {
-          backgroundColor: colors.surface,
-          borderColor: colors.success,
           iconColor: colors.success,
-          textColor: colors.textPrimary,
-          icon: CheckCircle2,
+          icon: Check,
         };
       case "error":
         return {
-          backgroundColor: colors.surface,
-          borderColor: colors.error,
           iconColor: colors.error,
-          textColor: colors.textPrimary,
-          icon: AlertCircle,
+          icon: X,
         };
       case "info":
       default:
         return {
-          backgroundColor: colors.surface,
-          borderColor: colors.primary,
           iconColor: colors.primary,
-          textColor: colors.textPrimary,
           icon: Info,
         };
     }
   };
 
+  if (!visible) return null;
+
   const config = getVariantConfig();
   const IconComponent = config.icon;
 
+  // Snackbar style: dark background in light mode, light background in dark mode
+  const snackbarBg = theme === "light" ? colors.textPrimary : colors.surface;
+  const snackbarText = theme === "light" ? colors.white : colors.textPrimary;
+
   return (
-    <Modal
-      visible={visible}
-      transparent
-      animationType="none"
-      statusBarTranslucent
+    <Animated.View
+      style={[
+        styles.container,
+        {
+          bottom: bottomPadding + spacing.lg,
+          transform: [{ translateY }],
+        },
+      ]}
     >
-      <View style={styles.modalContainer} pointerEvents="box-none">
-        <Animated.View
-          style={[
-            styles.container,
-            {
-              transform: [{ translateY }],
-              opacity,
-            },
-          ]}
+      <TouchableOpacity
+        activeOpacity={0.9}
+        onPress={hideToast}
+        style={[
+          styles.toast,
+          { backgroundColor: snackbarBg },
+        ]}
+      >
+        <IconComponent size={18} color={config.iconColor} />
+        <Text
+          style={[styles.message, { color: snackbarText }]}
+          numberOfLines={2}
         >
-          <TouchableOpacity
-            activeOpacity={0.9}
-            onPress={hideToast}
-            style={[
-              styles.toast,
-              {
-                backgroundColor: config.backgroundColor,
-                borderLeftColor: config.borderColor,
-                shadowColor: colors.black,
-              },
-            ]}
-          >
-            <View style={[styles.iconContainer, { backgroundColor: `${config.iconColor}15` }]}>
-              <IconComponent size={18} color={config.iconColor} />
-            </View>
-            <Text
-              style={[styles.message, { color: config.textColor }]}
-              numberOfLines={2}
-            >
-              {message}
-            </Text>
-          </TouchableOpacity>
-        </Animated.View>
-      </View>
-    </Modal>
+          {message}
+        </Text>
+      </TouchableOpacity>
+    </Animated.View>
   );
 };
 
 const styles = StyleSheet.create({
-  modalContainer: {
-    flex: 1,
-  },
   container: {
     position: "absolute",
-    top: 60,
     left: spacing.lg,
     right: spacing.lg,
+    zIndex: 9999,
   },
   toast: {
     flexDirection: "row",
@@ -164,19 +131,7 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.md,
     paddingHorizontal: spacing.lg,
     borderRadius: radius.md,
-    borderLeftWidth: 4,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 12,
-    elevation: 8,
     gap: spacing.md,
-  },
-  iconContainer: {
-    width: 32,
-    height: 32,
-    borderRadius: radius.sm,
-    justifyContent: "center",
-    alignItems: "center",
   },
   message: {
     flex: 1,

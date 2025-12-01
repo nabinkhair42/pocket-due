@@ -19,7 +19,7 @@ import { SummaryCardSkeleton } from "../components/SummaryCardSkeleton";
 import { useTheme } from "../contexts/ThemeContext";
 import { useToast } from "../contexts/ToastContext";
 import { usePayment } from "../hooks/usePayment";
-import { getThemeColors, spacing, radius, typography, shadows } from "../lib/theme";
+import { getThemeColors, spacing, radius, typography } from "../lib/theme";
 import { PaymentSummary } from "../types/api";
 
 interface SummaryScreenProps {
@@ -88,7 +88,7 @@ const SummaryDetailModal: React.FC<SummaryDetailModalProps> = ({
         </View>
 
         <ScrollView style={styles.modalContent} showsVerticalScrollIndicator={false}>
-          <View style={[styles.summaryCard, { backgroundColor: colors.surface, borderColor: colors.cardBorder }]}>
+          <View style={[styles.summaryCard, { backgroundColor: colors.surface }]}>
             <Text style={[styles.summaryLabel, { color: colors.textSecondary }]}>
               Net Balance
             </Text>
@@ -129,7 +129,7 @@ const SummaryDetailModal: React.FC<SummaryDetailModalProps> = ({
               return (
                 <View
                   key={payment._id}
-                  style={[styles.paymentItem, { backgroundColor: colors.surface, borderColor: colors.cardBorder }]}
+                  style={[styles.paymentItem, { backgroundColor: colors.surface }]}
                 >
                   <View style={styles.paymentHeader}>
                     <Text
@@ -213,7 +213,7 @@ export const SummaryScreen: React.FC<SummaryScreenProps> = ({ onBack }) => {
 
   const renderSummaryCard = ({ item }: { item: PaymentSummary }) => (
     <TouchableOpacity
-      style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.cardBorder }, shadows.sm]}
+      style={[styles.card, { backgroundColor: colors.surface }]}
       onPress={() => handleSummaryPress(item)}
       activeOpacity={0.7}
     >
@@ -360,7 +360,6 @@ const styles = StyleSheet.create({
     borderRadius: radius.lg,
     padding: spacing.lg,
     marginBottom: spacing.md,
-    borderWidth: 1,
   },
   cardHeader: {
     flexDirection: "row",
@@ -455,7 +454,6 @@ const styles = StyleSheet.create({
     borderRadius: radius.lg,
     padding: spacing.xl,
     marginBottom: spacing.lg,
-    borderWidth: 1,
   },
   summaryLabel: {
     ...typography.captionMedium,
@@ -494,7 +492,6 @@ const styles = StyleSheet.create({
     borderRadius: radius.md,
     padding: spacing.lg,
     marginBottom: spacing.sm,
-    borderWidth: 1,
   },
   paymentHeader: {
     flexDirection: "row",

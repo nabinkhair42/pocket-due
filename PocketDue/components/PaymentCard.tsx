@@ -2,7 +2,7 @@ import { Check, Clock, Edit2, Trash2 } from "lucide-react-native";
 import React, { useState } from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { useTheme } from "../contexts/ThemeContext";
-import { getThemeColors, spacing, radius, typography, shadows } from "../lib/theme";
+import { getThemeColors, spacing, radius, typography } from "../lib/theme";
 import { Payment } from "../types/models";
 import { Button } from "./Button";
 import { Drawer } from "./Drawer";
@@ -111,9 +111,7 @@ export const PaymentCard: React.FC<PaymentCardProps> = ({
           styles.card,
           {
             backgroundColor: colors.cardBackground,
-            borderColor: colors.cardBorder,
           },
-          shadows.sm,
         ]}
         onPress={() => setShowStatusDrawer(true)}
         activeOpacity={0.7}
@@ -278,7 +276,6 @@ const styles = StyleSheet.create({
     borderRadius: radius.lg,
     padding: spacing.lg,
     marginBottom: spacing.md,
-    borderWidth: 1,
   },
   header: {
     flexDirection: "row",
