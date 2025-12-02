@@ -21,16 +21,7 @@
 
 ### App Interface
 
-<div style="overflow-x: auto; white-space: nowrap; padding: 10px;">
-  <img src="assets/initial.png" alt="Initial Screen" width="250" style="display: inline-block; margin-right: 10px;"/>
-  <img src="assets/to-pay.png" alt="To Pay Screen" width="250" style="display: inline-block; margin-right: 10px;"/>
-  <img src="assets/to-receive.png" alt="To Receive Screen" width="250" style="display: inline-block; margin-right: 10px;"/>
-  <img src="assets/add-payment.png" alt="Add Payment Screen" width="250" style="display: inline-block; margin-right: 10px;"/>
-  <img src="assets/add-payment-dropdown.png" alt="Payment Type Dropdown" width="250" style="display: inline-block; margin-right: 10px;"/>
-  <img src="assets/payment-summary.png" alt="Payment Summary" width="250" style="display: inline-block; margin-right: 10px;"/>
-  <img src="assets/user-summary.png" alt="User Summary Screen" width="250" style="display: inline-block;"/>
-  <img src="assets/settings.png" alt="User Settings" width="250" style="display: inline-block;"/>
-</div>
+![App Interface](assets/og-image.png)
 
 ### Key Features Showcase
 
