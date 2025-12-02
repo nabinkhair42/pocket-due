@@ -80,10 +80,16 @@ class ApiService {
 
   // Auth methods
   async register(data: RegisterRequest): Promise<ApiResponse<AuthResponse>> {
-    return this.makeRequest<AuthResponse>("/auth/register", {
+    const response = await this.makeRequest<AuthResponse>("/auth/register", {
       method: "POST",
       body: JSON.stringify(data),
     });
+
+    if (response.success && response.data?.token) {
+      await this.setToken(response.data.token);
+    }
+
+    return response;
   }
 
   async login(data: LoginRequest): Promise<ApiResponse<AuthResponse>> {

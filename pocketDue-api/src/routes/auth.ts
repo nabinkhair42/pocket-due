@@ -1,24 +1,19 @@
-import { Request, Response, RequestHandler } from "express";
-import express from "express";
-import jwt from "jsonwebtoken";
+import express, { Request, RequestHandler, Response } from "express";
 import { authService } from "../features/auth/authService";
-import {
-  validateRequest,
-  registerValidationRules,
-  authValidationRules,
-} from "../utils/validation";
-import { handleAsync } from "../utils/errorHandler";
-import { authRateLimit } from "../middleware/rateLimit";
 import { authenticateToken } from "../middleware/auth";
-import { config } from "../config/env";
-import { LoginRequest, RegisterRequest, AuthRequest } from "../types";
+import { AuthRequest, LoginRequest, RegisterRequest } from "../types";
+import { handleAsync } from "../utils/errorHandler";
+import {
+  authValidationRules,
+  registerValidationRules,
+  validateRequest,
+} from "../utils/validation";
 
 const router = express.Router();
 
 // Register
 router.post(
   "/register",
-  authRateLimit.middleware,
   validateRequest(registerValidationRules),
   handleAsync(async (req: Request, res: Response): Promise<void> => {
     const userData = req.body as RegisterRequest;
@@ -35,7 +30,6 @@ router.post(
 // Login
 router.post(
   "/login",
-  authRateLimit.middleware,
   validateRequest(authValidationRules),
   handleAsync(async (req: Request, res: Response): Promise<void> => {
     const credentials = req.body as LoginRequest;

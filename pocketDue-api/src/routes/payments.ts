@@ -1,22 +1,18 @@
-import { Router, Request, Response, RequestHandler } from "express";
+import { Request, RequestHandler, Response, Router } from "express";
 import { paymentService } from "../features/payments/paymentService";
 import { authenticateToken } from "../middleware/auth";
 import { CreatePaymentRequest, Payment, UpdatePaymentRequest } from "../types";
+import { handleAsync } from "../utils/errorHandler";
 import {
-  validateRequest,
   paymentValidationRules,
   updatePaymentValidationRules,
+  validateRequest,
 } from "../utils/validation";
-import { handleAsync } from "../utils/errorHandler";
-import { apiRateLimit } from "../middleware/rateLimit";
 
 const router = Router();
 
 // Apply authentication middleware to all routes
 router.use(authenticateToken as unknown as RequestHandler);
-
-// Apply rate limiting to API routes
-router.use(apiRateLimit.middleware);
 
 // Get all payments for user
 router.get(
