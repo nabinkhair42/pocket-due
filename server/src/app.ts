@@ -1,13 +1,15 @@
 import express from "express";
 import cors from "cors";
 import helmet from "helmet";
+import mongoose from "mongoose";
+import { pathToFileURL } from "node:url";
 import { toNodeHandler } from "better-auth/node";
-import { config } from "./config/env";
-import { connectDB } from "./config/database";
-import { auth } from "./config/auth";
-import paymentRoutes from "./routes/payments.routes";
-import { errorHandler, notFound } from "./utils/error-handler";
-import { logger } from "./utils/logger";
+import { config } from "./config/env.js";
+import { connectDB } from "./config/database.js";
+import { auth } from "./config/auth.js";
+import paymentRoutes from "./routes/payments.routes.js";
+import { errorHandler, notFound } from "./utils/error-handler.js";
+import { logger } from "./utils/logger.js";
 
 const app = express();
 
@@ -66,7 +68,7 @@ app.get("/health", async (_, res) => {
   } catch {
     // Report degraded readiness without exposing connection details.
   }
-  const ready = require("mongoose").connection.readyState === 1;
+  const ready = mongoose.connection.readyState === 1;
   res.status(ready ? 200 : 503).json({
     status: ready ? "ok" : "degraded",
     timestamp: new Date().toISOString(),
@@ -91,7 +93,7 @@ export const startServer = async () => {
   return server;
 };
 
-if (require.main === module) {
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   startServer().catch((error) => {
     logger.error("Server startup failed", { error });
     process.exitCode = 1;

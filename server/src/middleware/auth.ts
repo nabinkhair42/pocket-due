@@ -1,6 +1,6 @@
 import { NextFunction, Request, Response } from "express";
 import { fromNodeHeaders } from "better-auth/node";
-import { auth } from "../config/auth";
+import { auth } from "../config/auth.js";
 
 export const authenticateToken = async (req: Request, res: Response, next: NextFunction) => {
   try {

@@ -1,13 +1,13 @@
 import { Request, RequestHandler, Response, Router } from "express";
-import { paymentService } from "../features/payments/payment-service";
-import { authenticateToken } from "../middleware/auth";
-import { CreatePaymentRequest, Payment, UpdatePaymentRequest } from "../types";
-import { handleAsync } from "../utils/error-handler";
+import { paymentService } from "../features/payments/payment-service.js";
+import { authenticateToken } from "../middleware/auth.js";
+import { CreatePaymentRequest, Payment, UpdatePaymentRequest } from "../types/index.js";
+import { handleAsync } from "../utils/error-handler.js";
 import {
   paymentValidationRules,
   updatePaymentValidationRules,
   validateRequest,
-} from "../utils/validation";
+} from "../utils/validation.js";
 
 const router = Router();
 

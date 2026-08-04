@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useTheme } from "../contexts/ThemeContext";
@@ -18,18 +18,27 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthSuccess }) => {
   const colors = getThemeColors(theme);
   const { showToast } = useToast();
   const { signInWithProvider, loading } = useAuth();
+  const [pendingProvider, setPendingProvider] = useState<SocialProvider | null>(null);
+
+  const busy = loading || pendingProvider !== null;
 
   const handleSignIn = async (provider: SocialProvider) => {
-    const result = await signInWithProvider(provider);
-    if (result.success) {
-      onAuthSuccess();
-      return;
-    }
+    if (busy) return;
+    setPendingProvider(provider);
+    try {
+      const result = await signInWithProvider(provider);
+      if (result.success) {
+        onAuthSuccess();
+        return;
+      }
 
-    showToast(
-      result.error || `Unable to sign in with ${provider === "google" ? "Google" : "GitHub"}. Try again.`,
-      "error",
-    );
+      showToast(
+        result.error || `Unable to sign in with ${provider === "google" ? "Google" : "GitHub"}. Try again.`,
+        "error",
+      );
+    } finally {
+      setPendingProvider(null);
+    }
   };
 
   return (
@@ -49,35 +58,47 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthSuccess }) => {
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Continue with Google"
-          disabled={loading}
+          accessibilityState={{ disabled: busy, busy: pendingProvider === "google" }}
+          disabled={busy}
           onPress={() => handleSignIn("google")}
           style={({ pressed }) => [
             styles.socialButton,
             { backgroundColor: colors.surface, borderColor: colors.border },
-            pressed && !loading && styles.pressed,
-            loading && styles.disabled,
+            pressed && !busy && styles.pressed,
+            busy && styles.disabled,
           ]}
         >
-          <GoogleIcon size={21} />
+          <View style={styles.iconSlot}>
+            {pendingProvider === "google" ? (
+              <ActivityIndicator size="small" color={colors.textPrimary} />
+            ) : (
+              <GoogleIcon size={21} />
+            )}
+          </View>
           <Text style={[styles.socialButtonText, { color: colors.textPrimary }]}>Continue with Google</Text>
-          {loading ? <ActivityIndicator size="small" color={colors.textSecondary} /> : <View style={styles.trailingSpace} />}
         </Pressable>
 
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Continue with GitHub"
-          disabled={loading}
+          accessibilityState={{ disabled: busy, busy: pendingProvider === "github" }}
+          disabled={busy}
           onPress={() => handleSignIn("github")}
           style={({ pressed }) => [
             styles.socialButton,
             { backgroundColor: colors.textPrimary, borderColor: colors.textPrimary },
-            pressed && !loading && styles.pressed,
-            loading && styles.disabled,
+            pressed && !busy && styles.pressed,
+            busy && styles.disabled,
           ]}
         >
-          <GithubIcon size={21} color={colors.background} />
+          <View style={styles.iconSlot}>
+            {pendingProvider === "github" ? (
+              <ActivityIndicator size="small" color={colors.background} />
+            ) : (
+              <GithubIcon size={21} color={colors.background} />
+            )}
+          </View>
           <Text style={[styles.socialButtonText, { color: colors.background }]}>Continue with GitHub</Text>
-          <View style={styles.trailingSpace} />
         </Pressable>
 
         <Text style={[styles.privacyCopy, { color: colors.textTertiary }]}>By continuing, you agree to PocketDue’s terms and privacy policy.</Text>
@@ -96,9 +117,9 @@ const styles = StyleSheet.create({
   actions: { paddingBottom: spacing.xxxl, gap: spacing.md },
   actionTitle: { ...typography.h3, textAlign: "center" },
   actionHint: { ...typography.caption, textAlign: "center", marginBottom: spacing.sm, paddingHorizontal: spacing.lg },
-  socialButton: { minHeight: 56, borderRadius: radius.lg, borderWidth: 1, paddingHorizontal: spacing.lg, flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: spacing.md },
-  socialButtonText: { ...typography.button, flex: 1, textAlign: "center" },
-  trailingSpace: { width: 21, height: 21 },
+  socialButton: { minHeight: 56, borderRadius: radius.lg, borderWidth: 1, paddingHorizontal: spacing.lg, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: spacing.md },
+  socialButtonText: { ...typography.button, textAlign: "center" },
+  iconSlot: { width: 21, height: 21, alignItems: "center", justifyContent: "center" },
   pressed: { transform: [{ scale: 0.96 }] },
   disabled: { opacity: 0.55 },
   privacyCopy: { ...typography.small, textAlign: "center", marginTop: spacing.xs, paddingHorizontal: spacing.md },

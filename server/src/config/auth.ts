@@ -1,9 +1,9 @@
 import { expo } from "@better-auth/expo";
 import { betterAuth } from "better-auth";
 import { mongodbAdapter } from "better-auth/adapters/mongodb";
-import { Payment } from "../models/payment";
-import { authDatabase, authMongoClient } from "./database";
-import { config } from "./env";
+import { Payment } from "../models/payment.js";
+import { authDatabase, authMongoClient } from "./database.js";
+import { config } from "./env.js";
 
 export const auth = betterAuth({
   appName: "PocketDue",

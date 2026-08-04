@@ -1,8 +1,8 @@
 import mongoose from "mongoose";
-import { Payment, IPayment } from "../../models/payment";
-import { CreatePaymentRequest, UpdatePaymentRequest } from "../../types";
-import { createError } from "../../utils/error-handler";
-import { logger } from "../../utils/logger";
+import { Payment, IPayment } from "../../models/payment.js";
+import { CreatePaymentRequest, UpdatePaymentRequest } from "../../types/index.js";
+import { createError } from "../../utils/error-handler.js";
+import { logger } from "../../utils/logger.js";
 
 export class PaymentService {
   async createPayment(
