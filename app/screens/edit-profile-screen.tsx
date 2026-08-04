@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   View,
   Text,
@@ -7,6 +7,8 @@ import {
   StyleSheet,
   ScrollView,
   StatusBar,
+  KeyboardAvoidingView,
+  Platform,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { ChevronLeft, User, Mail, Save } from "lucide-react-native";
@@ -25,15 +27,20 @@ export const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
   const { theme } = useTheme();
   const colors = getThemeColors(theme);
   const { loading, updateProfile, getCurrentUserData } = useUser();
-  const [formData, setFormData] = useState({
-    name: "",
-    email: "",
-  });
+  const [formData, setFormData] = useState(() => getCurrentUserData());
+  // Once the user starts typing, a late-arriving /auth/me response must not
+  // overwrite their input mid-keystroke.
+  const isDirty = useRef(false);
 
   useEffect(() => {
-    const userData = getCurrentUserData();
-    setFormData(userData);
+    if (isDirty.current) return;
+    setFormData(getCurrentUserData());
   }, [getCurrentUserData]);
+
+  const handleChange = (field: "name" | "email", value: string) => {
+    isDirty.current = true;
+    setFormData((prev) => ({ ...prev, [field]: value }));
+  };
 
   const handleSave = async () => {
     const success = await updateProfile({
@@ -42,6 +49,7 @@ export const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
     });
 
     if (success) {
+      isDirty.current = false;
       onBack();
     }
   };
@@ -50,7 +58,6 @@ export const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       <StatusBar
         barStyle={theme === "dark" ? "light-content" : "dark-content"}
-        backgroundColor={colors.background}
       />
 
       <View style={[styles.header, { borderBottomColor: colors.border }]}>
@@ -58,6 +65,9 @@ export const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
           onPress={onBack}
           style={[styles.backButton, { backgroundColor: colors.surfaceSecondary }]}
           activeOpacity={0.7}
+          accessibilityRole="button"
+          accessibilityLabel="Go back"
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
         >
           <ChevronLeft size={20} color={colors.textPrimary} />
         </TouchableOpacity>
@@ -67,7 +77,15 @@ export const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
         <View style={styles.headerSpacer} />
       </View>
 
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+      <KeyboardAvoidingView
+        style={styles.flex}
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
+      >
+        <ScrollView
+          style={styles.content}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
         <View style={styles.section}>
           <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>
             Personal Information
@@ -89,7 +107,7 @@ export const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
                 placeholder="Enter your full name"
                 placeholderTextColor={colors.textTertiary}
                 value={formData.name}
-                onChangeText={(text) => setFormData({ ...formData, name: text })}
+                onChangeText={(text) => handleChange("name", text)}
                 autoCapitalize="words"
               />
             </View>
@@ -106,7 +124,7 @@ export const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
                 placeholder="Enter your email"
                 placeholderTextColor={colors.textTertiary}
                 value={formData.email}
-                onChangeText={(text) => setFormData({ ...formData, email: text })}
+                onChangeText={(text) => handleChange("email", text)}
                 keyboardType="email-address"
                 autoCapitalize="none"
               />
@@ -127,12 +145,16 @@ export const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
           </Button>
         </View>
       </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
+    flex: 1,
+  },
+  flex: {
     flex: 1,
   },
   header: {
@@ -193,6 +215,7 @@ const styles = StyleSheet.create({
   input: {
     flex: 1,
     ...typography.body,
+    minHeight: 24,
   },
   actions: {
     marginTop: spacing.xxxl,

@@ -1,19 +1,23 @@
 import { ChevronLeft, ChevronRight, Lock, Mail, User } from "lucide-react-native";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
-  ActivityIndicator,
+  KeyboardAvoidingView,
+  BackHandler,
+  Platform,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { Button } from "../components/button";
 import { AppLogo } from "../components/icons";
 import { useTheme } from "../contexts/ThemeContext";
 import { useToast } from "../contexts/toast-context";
 import { useAuth } from "../hooks/use-auth";
-import { getThemeColors } from "../lib/theme";
+import { getThemeColors, typography } from "../lib/theme";
 import { LoginRequest, RegisterRequest } from "../types/api";
 
 interface AuthScreenProps {
@@ -31,9 +35,28 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthSuccess }) => {
   const { showToast } = useToast();
   const { register, login, loading } = useAuth();
 
+  useEffect(() => {
+    const subscription = BackHandler.addEventListener("hardwareBackPress", () => {
+      if (!showEmailForm) return false;
+      dismissForm();
+      return true;
+    });
+
+    return () => subscription.remove();
+  }, [showEmailForm]);
+
+  // The form is a branch of a component that never unmounts, so credentials
+  // would otherwise sit in state after the user backs out.
+  const dismissForm = () => {
+    setShowEmailForm(false);
+    setEmail("");
+    setPassword("");
+    setName("");
+  };
+
   const handleRegister = async () => {
     if (!email.trim() || !password.trim() || !name.trim()) {
-      showToast("Please fill in all fields", "error");
+      showToast("Enter your name, email, and password to continue.", "error");
       return;
     }
 
@@ -46,16 +69,16 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthSuccess }) => {
     const result = await register(data);
 
     if (result.success) {
-      showToast("Registration successful!", "success");
+      showToast("Account created", "success");
       onAuthSuccess();
     } else {
-      showToast(result.error || "Registration failed", "error");
+      showToast(result.error || "Unable to create your account. Try again.", "error");
     }
   };
 
   const handleLogin = async () => {
     if (!email.trim() || !password.trim()) {
-      showToast("Please fill in all fields", "error");
+      showToast("Enter your email and password to continue.", "error");
       return;
     }
 
@@ -67,15 +90,15 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthSuccess }) => {
     const result = await login(data);
 
     if (result.success) {
-      showToast("Login successful!", "success");
+      showToast("Signed in", "success");
       onAuthSuccess();
     } else {
-      showToast(result.error || "Login failed", "error");
+      showToast(result.error || "Unable to sign in. Check your details and try again.", "error");
     }
   };
 
   const renderWelcomeScreen = () => (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       <View style={styles.header}>
         <View style={styles.logoContainer}>
           <AppLogo size={80} style={styles.logo} />
@@ -84,7 +107,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthSuccess }) => {
           PocketDue
         </Text>
         <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
-          Track your payments with ease
+          Keep track of what you owe and what others owe you.
         </Text>
       </View>
 
@@ -94,36 +117,47 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthSuccess }) => {
             icon={<ChevronRight size={20} color={colors.white} />}
             variant="primary"
             onPress={() => setShowEmailForm(true)}
-            size="xl"
+            size="lg"
+            fullWidth
           >
-            <Text style={[styles.buttonText, { color: colors.white }]}>
-              Get Started
-            </Text>
+            Get started
           </Button>
         </View>
       </View>
-    </View>
+    </SafeAreaView>
   );
 
   const renderEmailForm = () => (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       <View style={styles.formHeader}>
         <TouchableOpacity
-          onPress={() => setShowEmailForm(false)}
+          onPress={dismissForm}
           style={styles.backButton}
+          accessibilityRole="button"
+          accessibilityLabel="Go back"
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
         >
           <ChevronLeft size={24} color={colors.textPrimary} />
         </TouchableOpacity>
         <Text style={[styles.formTitle, { color: colors.textPrimary }]}>
-          {showLoginForm ? "Welcome Back" : "Create Account"}
+          {showLoginForm ? "Welcome back" : "Create account"}
         </Text>
       </View>
 
-      <View style={styles.formContainer}>
+      <KeyboardAvoidingView
+        style={styles.flex}
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
+      >
+        <ScrollView
+          style={styles.flex}
+          contentContainerStyle={styles.formContainer}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
         {!showLoginForm && (
           <View style={styles.inputGroup}>
             <Text style={[styles.label, { color: colors.textPrimary }]}>
-              Full Name
+              Full name
             </Text>
             <View
               style={[
@@ -146,7 +180,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthSuccess }) => {
 
         <View style={styles.inputGroup}>
           <Text style={[styles.label, { color: colors.textPrimary }]}>
-            Email Address
+              Email address
           </Text>
           <View
             style={[styles.inputContainer, { backgroundColor: colors.surface }]}
@@ -188,29 +222,27 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthSuccess }) => {
           variant="primary"
           size="lg"
           style={styles.submitButton}
+          fullWidth
+          loading={loading}
           disabled={loading}
         >
-          {loading ? (
-            <ActivityIndicator color={colors.white} />
-          ) : (
-            <Text style={[styles.buttonText, { color: colors.white }]}>
-              {showLoginForm ? "Sign In" : "Create Account"}
-            </Text>
-          )}
+          {showLoginForm ? "Sign in" : "Create account"}
         </Button>
 
         <TouchableOpacity
           onPress={() => setShowLoginForm(!showLoginForm)}
           style={styles.switchButton}
+          accessibilityRole="button"
         >
           <Text style={[styles.switchText, { color: colors.primary }]}>
             {showLoginForm
-              ? "Don't have an account? Sign Up"
-              : "Already have an account? Sign In"}
+              ? "New to PocketDue? Create an account"
+              : "Already have an account? Sign in"}
           </Text>
         </TouchableOpacity>
-      </View>
-    </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 
   return showEmailForm ? renderEmailForm() : renderWelcomeScreen();
@@ -218,6 +250,9 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthSuccess }) => {
 
 const styles = StyleSheet.create({
   container: {
+    flex: 1,
+  },
+  flex: {
     flex: 1,
   },
   header: {
@@ -233,15 +268,14 @@ const styles = StyleSheet.create({
     alignSelf: "center",
   },
   title: {
-    fontSize: 32,
-    fontWeight: "bold",
+    ...typography.h1,
     textAlign: "center",
     marginBottom: 8,
   },
   subtitle: {
-    fontSize: 16,
+    ...typography.body,
     textAlign: "center",
-    lineHeight: 24,
+    maxWidth: 320,
   },
   content: {
     paddingHorizontal: 24,
@@ -257,14 +291,13 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   buttonText: {
-    fontSize: 16,
-    fontWeight: "600",
+    ...typography.button,
   },
   formHeader: {
     flexDirection: "row",
     alignItems: "center",
     paddingHorizontal: 10,
-    paddingTop: 60,
+    paddingTop: 8,
     paddingBottom: 32,
   },
   backButton: {
@@ -272,12 +305,11 @@ const styles = StyleSheet.create({
     marginRight: 6,
   },
   formTitle: {
-    fontSize: 24,
-    fontWeight: "bold",
+    ...typography.h2,
   },
   formContainer: {
-    flex: 1,
     paddingHorizontal: 24,
+    paddingBottom: 40,
   },
   inputGroup: {
     marginBottom: 24,
@@ -297,7 +329,7 @@ const styles = StyleSheet.create({
   },
   input: {
     flex: 1,
-    fontSize: 16,
+    ...typography.body,
   },
   submitButton: {
     marginTop: 32,

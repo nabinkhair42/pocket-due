@@ -1,6 +1,6 @@
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { ArrowDownLeft, ArrowUpRight, Calendar, ChevronDown, DollarSign, FileText, User, Check } from "lucide-react-native";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   FlatList,
   Keyboard,
@@ -17,7 +17,7 @@ import {
 } from "react-native";
 import { useTheme } from "../contexts/ThemeContext";
 import { apiService } from "../lib/api";
-import { getThemeColors, spacing, radius, typography, shadows } from "../lib/theme";
+import { getThemeColors, spacing, radius, typography, shadows, numericTextStyle } from "../lib/theme";
 import { CreatePaymentRequest } from "../types/api";
 import { Payment } from "../types/models";
 import { Button } from "./button";
@@ -26,7 +26,8 @@ import { Drawer } from "./drawer";
 interface AddPaymentDrawerProps {
   visible: boolean;
   onClose: () => void;
-  onSubmit: (data: CreatePaymentRequest) => void;
+  /** Awaited so the drawer can clear its in-flight state when the save fails. */
+  onSubmit: (data: CreatePaymentRequest) => void | Promise<void>;
   editingPayment?: Payment | null;
 }
 
@@ -45,6 +46,11 @@ export const AddPaymentDrawer: React.FC<AddPaymentDrawerProps> = ({
     dueDate: new Date(),
     description: "",
   });
+  // The amount is held as raw text while editing. Round-tripping through
+  // parseFloat on every keystroke made decimals impossible to type: "12."
+  // parsed to 12 and re-rendered as "12", eating the separator.
+  const [amountText, setAmountText] = useState("");
+  const [submitting, setSubmitting] = useState(false);
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [previousUsers, setPreviousUsers] = useState<string[]>([]);
 
@@ -52,14 +58,19 @@ export const AddPaymentDrawer: React.FC<AddPaymentDrawerProps> = ({
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [searchText, setSearchText] = useState("");
 
-  const filteredOptions = previousUsers.filter((option) =>
-    option.toLowerCase().includes(searchText.toLowerCase())
+  const filteredOptions = useMemo(
+    () =>
+      previousUsers.filter((option) =>
+        option.toLowerCase().includes(searchText.toLowerCase())
+      ),
+    [previousUsers, searchText]
   );
 
   useEffect(() => {
     // Reset dropdown state when drawer opens/closes
     setIsDropdownOpen(false);
     setSearchText("");
+    setSubmitting(false);
 
     if (editingPayment) {
       setFormData({
@@ -69,6 +80,9 @@ export const AddPaymentDrawer: React.FC<AddPaymentDrawerProps> = ({
         dueDate: new Date(editingPayment.dueDate),
         description: editingPayment.description || "",
       });
+      setAmountText(
+        editingPayment.amount ? String(editingPayment.amount) : ""
+      );
     } else {
       setFormData({
         type: "to_pay",
@@ -77,6 +91,7 @@ export const AddPaymentDrawer: React.FC<AddPaymentDrawerProps> = ({
         dueDate: new Date(),
         description: "",
       });
+      setAmountText("");
     }
   }, [editingPayment, visible]);
 
@@ -104,12 +119,32 @@ export const AddPaymentDrawer: React.FC<AddPaymentDrawerProps> = ({
     setSearchText("");
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
+    if (submitting) return; // guard against a double tap creating two payments
+
     if (!formData.personName.trim()) {
       return;
     }
-    onSubmit(formData);
+
+    const parsedAmount = parseFloat(amountText.replace(",", "."));
+    if (!Number.isFinite(parsedAmount) || parsedAmount <= 0) {
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      // On success the parent closes the drawer; on failure it stays open, so
+      // the flag has to be cleared either way or the button stays disabled.
+      await onSubmit({ ...formData, amount: parsedAmount });
+    } finally {
+      setSubmitting(false);
+    }
   };
+
+  const isSubmitDisabled =
+    submitting ||
+    !formData.personName.trim() ||
+    !Number.isFinite(parseFloat(amountText.replace(",", ".")));
 
   const formatDate = (date: Date) => {
     return date.toLocaleDateString("en-US", {
@@ -209,15 +244,8 @@ export const AddPaymentDrawer: React.FC<AddPaymentDrawerProps> = ({
 
             {/* Person Name Field with Dropdown */}
             <View style={styles.personNameContainer}>
-              <TouchableOpacity
+              <View
                 style={[styles.inputContainer, { backgroundColor: colors.surface }]}
-                onPress={() => {
-                  if (previousUsers.length > 0) {
-                    Keyboard.dismiss();
-                    setIsDropdownOpen(true);
-                  }
-                }}
-                activeOpacity={0.8}
               >
                 <User size={20} color={colors.textTertiary} />
                 <TextInput
@@ -233,11 +261,7 @@ export const AddPaymentDrawer: React.FC<AddPaymentDrawerProps> = ({
                     setFormData({ ...formData, personName: text });
                     setSearchText(text);
                   }}
-                  onFocus={() => {
-                    if (previousUsers.length > 0) {
-                      setIsDropdownOpen(true);
-                    }
-                  }}
+                  autoCapitalize="words"
                 />
                 {previousUsers.length > 0 && (
                   <TouchableOpacity
@@ -247,11 +271,13 @@ export const AddPaymentDrawer: React.FC<AddPaymentDrawerProps> = ({
                     }}
                     style={styles.dropdownToggle}
                     hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                    accessibilityRole="button"
+                    accessibilityLabel="Choose from previous contacts"
                   >
                     <ChevronDown size={20} color={colors.textTertiary} />
                   </TouchableOpacity>
                 )}
-              </TouchableOpacity>
+              </View>
 
               {/* Dropdown Modal - shadcn/ui style */}
               <Modal
@@ -347,11 +373,18 @@ export const AddPaymentDrawer: React.FC<AddPaymentDrawerProps> = ({
                 style={[styles.input, { color: colors.textPrimary }]}
                 placeholder="Amount"
                 placeholderTextColor={colors.textTertiary}
-                value={formData.amount ? formData.amount.toString() : ""}
-                onChangeText={(text) =>
-                  setFormData({ ...formData, amount: parseFloat(text) || 0 })
-                }
-                keyboardType="numeric"
+                value={amountText}
+                onChangeText={(text) => {
+                  // Keep the raw text so partial input like "12." survives a
+                  // render; collapse to at most one decimal separator.
+                  const normalized = text.replace(",", ".").replace(/[^0-9.]/g, "");
+                  const [whole, ...rest] = normalized.split(".");
+                  setAmountText(
+                    rest.length > 0 ? `${whole}.${rest.join("")}` : whole
+                  );
+                }}
+                keyboardType="decimal-pad"
+                accessibilityLabel="Payment amount"
               />
             </View>
 
@@ -372,19 +405,21 @@ export const AddPaymentDrawer: React.FC<AddPaymentDrawerProps> = ({
                       styles.quickAmountBadge,
                       {
                         backgroundColor:
-                          formData.amount === amount
+                          amountText === String(amount)
                             ? colors.primary
                             : colors.surfaceSecondary,
                       },
                     ]}
-                    onPress={() => setFormData({ ...formData, amount })}
+                    onPress={() => setAmountText(String(amount))}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Set amount to ${amount}`}
                   >
                     <Text
                       style={[
                         styles.quickAmountText,
                         {
                           color:
-                            formData.amount === amount
+                            amountText === String(amount)
                               ? colors.white
                               : colors.textSecondary,
                         },
@@ -431,6 +466,8 @@ export const AddPaymentDrawer: React.FC<AddPaymentDrawerProps> = ({
             variant="primary"
             size="lg"
             fullWidth
+            loading={submitting}
+            disabled={isSubmitDisabled}
           >
             {editingPayment ? "Update Payment" : "Add Payment"}
           </Button>
@@ -442,9 +479,11 @@ export const AddPaymentDrawer: React.FC<AddPaymentDrawerProps> = ({
             value={formData.dueDate}
             mode="date"
             display="default"
-            onChange={(_event, selectedDate) => {
+            onChange={(event, selectedDate) => {
               setShowDatePicker(false);
-              if (selectedDate) {
+              // Android fires onChange for Cancel too, and still supplies a
+              // date — committing it would silently change the due date.
+              if (event.type === "set" && selectedDate) {
                 setFormData({ ...formData, dueDate: selectedDate });
               }
             }}
@@ -534,6 +573,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.sm,
     borderRadius: radius.sm,
     gap: spacing.xs,
+    minHeight: 44,
   },
   typeTabActive: {},
   typeTabText: {
@@ -547,10 +587,12 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.md,
     marginBottom: spacing.md,
     gap: spacing.md,
+    minHeight: 52,
   },
   input: {
     flex: 1,
     ...typography.body,
+    minHeight: 24,
   },
   dateText: {
     flex: 1,
@@ -561,7 +603,10 @@ const styles = StyleSheet.create({
     zIndex: 1000,
   },
   dropdownToggle: {
-    padding: spacing.xs,
+    width: 44,
+    height: 44,
+    alignItems: "center",
+    justifyContent: "center",
   },
   // Dropdown Modal Styles (shadcn/ui inspired)
   dropdownOverlay: {
@@ -576,7 +621,6 @@ const styles = StyleSheet.create({
     maxWidth: 340,
     maxHeight: 400,
     borderRadius: radius.lg,
-    borderWidth: 1,
     overflow: "hidden",
   },
   dropdownSearchContainer: {
@@ -600,6 +644,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.md,
+    minHeight: 52,
     gap: spacing.md,
   },
   dropdownOptionText: {
@@ -665,9 +710,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
     borderRadius: radius.full,
+    minHeight: 44,
+    minWidth: 64,
+    alignItems: "center",
+    justifyContent: "center",
   },
   quickAmountText: {
     ...typography.captionMedium,
+    ...numericTextStyle,
   },
   footer: {
     paddingVertical: spacing.lg,

@@ -1,5 +1,5 @@
 import React from "react";
-import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 import { ArrowUpRight, ArrowDownLeft } from "lucide-react-native";
 import { useTheme } from "../contexts/ThemeContext";
 import { getThemeColors, spacing, radius, typography, shadows } from "../lib/theme";
@@ -25,18 +25,14 @@ export const Tabs: React.FC<TabsProps> = ({ currentTab, onTabChange }) => {
         const Icon = tab.icon;
 
         return (
-          <TouchableOpacity
+          <Pressable
             key={tab.id}
-            style={[
-              styles.tab,
-              isActive && [
-                styles.activeTab,
-                { backgroundColor: colors.surface },
-                shadows.sm,
-              ],
-            ]}
             onPress={() => onTabChange(tab.id)}
-            activeOpacity={0.7}
+            style={({ pressed }) => [
+              styles.tab,
+              isActive && [styles.activeTab, { backgroundColor: colors.surface }, shadows.sm],
+              pressed && { transform: [{ scale: 0.96 }] },
+            ]}
           >
             <Icon
               size={16}
@@ -52,7 +48,7 @@ export const Tabs: React.FC<TabsProps> = ({ currentTab, onTabChange }) => {
             >
               {tab.label}
             </Text>
-          </TouchableOpacity>
+          </Pressable>
         );
       })}
     </View>
@@ -76,6 +72,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.sm,
     borderRadius: radius.sm,
     gap: spacing.xs,
+    minHeight: 44,
   },
   activeTab: {},
   tabText: {

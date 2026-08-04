@@ -14,12 +14,16 @@ interface EnvironmentConfig {
 }
 
 const getEnvironmentConfig = (): EnvironmentConfig => {
+  const jwtSecret = process.env.JWT_SECRET?.trim();
+  if (!jwtSecret || jwtSecret.length < 32 || jwtSecret === "your-secret-key") {
+    throw new Error("JWT_SECRET must be set to a strong secret of at least 32 characters");
+  }
   return {
     NODE_ENV: process.env.NODE_ENV || "development",
     PORT: parseInt(process.env.PORT || "3000", 10),
     MONGODB_URI:
       process.env.MONGODB_URI || "mongodb://localhost:27017/pocketDue",
-    JWT_SECRET: process.env.JWT_SECRET || "your-secret-key",
+    JWT_SECRET: jwtSecret,
     FRONTEND_URL: process.env.FRONTEND_URL || "http://localhost:3000",
     MOBILE_APP_URL: process.env.MOBILE_APP_URL || "pocketdue://",
     ALLOWED_ORIGINS: process.env.ALLOWED_ORIGINS?.split(",") || [

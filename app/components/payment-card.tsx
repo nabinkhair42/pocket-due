@@ -1,8 +1,8 @@
 import { Check, Clock, Edit2, Trash2 } from "lucide-react-native";
 import React, { useState } from "react";
-import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { Pressable, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { useTheme } from "../contexts/ThemeContext";
-import { getThemeColors, spacing, radius, typography } from "../lib/theme";
+import { getThemeColors, spacing, radius, typography, numericTextStyle } from "../lib/theme";
 import { Payment } from "../types/models";
 import { Button } from "./button";
 import { Drawer } from "./drawer";
@@ -14,7 +14,7 @@ interface PaymentCardProps {
   onToggleStatus: (id: string) => void;
 }
 
-export const PaymentCard: React.FC<PaymentCardProps> = ({
+export const PaymentCard = React.memo<PaymentCardProps>(({
   payment,
   onEdit,
   onDelete,
@@ -106,15 +106,9 @@ export const PaymentCard: React.FC<PaymentCardProps> = ({
 
   return (
     <>
-      <TouchableOpacity
-        style={[
-          styles.card,
-          {
-            backgroundColor: colors.cardBackground,
-          },
-        ]}
+      <Pressable
         onPress={() => setShowStatusDrawer(true)}
-        activeOpacity={0.7}
+        style={({ pressed }) => [styles.card, { backgroundColor: colors.cardBackground, shadowColor: colors.black }, pressed && { transform: [{ scale: 0.99 }] }]}
       >
         <View style={styles.header}>
           <View style={styles.personInfo}>
@@ -133,7 +127,7 @@ export const PaymentCard: React.FC<PaymentCardProps> = ({
             </View>
           </View>
           <View style={styles.amountSection}>
-            <Text style={[styles.amount, { color: colors.textPrimary }]}>
+            <Text style={[styles.amount, numericTextStyle, { color: colors.textPrimary }]}>
               {formatAmount(payment.amount)}
             </Text>
             <View style={[styles.statusBadge, { backgroundColor: statusConfig.backgroundColor }]}>
@@ -172,7 +166,7 @@ export const PaymentCard: React.FC<PaymentCardProps> = ({
             <Text style={[styles.actionText, { color: colors.error }]}>Delete</Text>
           </TouchableOpacity>
         </View>
-      </TouchableOpacity>
+      </Pressable>
 
       {/* Status Update Drawer */}
       <Drawer
@@ -269,13 +263,19 @@ export const PaymentCard: React.FC<PaymentCardProps> = ({
       </Drawer>
     </>
   );
-};
+});
+
+PaymentCard.displayName = "PaymentCard";
 
 const styles = StyleSheet.create({
   card: {
     borderRadius: radius.lg,
     padding: spacing.lg,
     marginBottom: spacing.md,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 6,
+    elevation: 2,
   },
   header: {
     flexDirection: "row",
@@ -329,6 +329,7 @@ const styles = StyleSheet.create({
   description: {
     ...typography.caption,
     marginTop: spacing.md,
+    lineHeight: 20,
   },
   footer: {
     flexDirection: "row",
@@ -345,6 +346,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     borderRadius: radius.sm,
     gap: spacing.xs,
+    minHeight: 44,
+    minWidth: 84,
+    justifyContent: "center",
   },
   actionText: {
     ...typography.small,

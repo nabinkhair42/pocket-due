@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from "react";
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from "react";
 import { useColorScheme } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
@@ -28,6 +28,8 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
   const systemColorScheme = useColorScheme();
   const [theme, setThemeState] = useState<Theme>(systemColorScheme === "dark" ? "dark" : "light");
   const [isLoaded, setIsLoaded] = useState(false);
+  // Null until the user picks a theme explicitly; while null we follow the OS.
+  const [hasExplicitChoice, setHasExplicitChoice] = useState(false);
 
   useEffect(() => {
     loadTheme();
@@ -38,6 +40,7 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
       const savedTheme = await AsyncStorage.getItem("theme");
       if (savedTheme === "dark" || savedTheme === "light") {
         setThemeState(savedTheme);
+        setHasExplicitChoice(true);
       }
       // If no saved theme, keep the system default (already set in useState)
     } catch (error) {
@@ -46,25 +49,40 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
     }
   };
 
-  const setTheme = async (newTheme: Theme) => {
+  // useColorScheme was only read in the useState initializer, so flipping the
+  // OS to dark while the app was open changed nothing until a restart.
+  useEffect(() => {
+    if (hasExplicitChoice) return;
+    setThemeState(systemColorScheme === "dark" ? "dark" : "light");
+  }, [systemColorScheme, hasExplicitChoice]);
+
+  const setTheme = useCallback(async (newTheme: Theme) => {
+    // Update immediately; persistence must not gate the UI.
+    setThemeState(newTheme);
+    setHasExplicitChoice(true);
     try {
       await AsyncStorage.setItem("theme", newTheme);
-      setThemeState(newTheme);
     } catch (error) {
     }
-  };
+  }, []);
 
-  const toggleTheme = () => {
-    const newTheme = theme === "light" ? "dark" : "light";
-    setTheme(newTheme);
-  };
+  const toggleTheme = useCallback(() => {
+    setThemeState((current) => {
+      const newTheme = current === "light" ? "dark" : "light";
+      setHasExplicitChoice(true);
+      AsyncStorage.setItem("theme", newTheme).catch(() => {});
+      return newTheme;
+    });
+  }, []);
+
+  const value = useMemo(() => ({ theme, toggleTheme, setTheme }), [theme, toggleTheme, setTheme]);
 
   if (!isLoaded) {
     return null; // Or a loading screen
   }
 
   return (
-    <ThemeContext.Provider value={{ theme, toggleTheme, setTheme }}>
+    <ThemeContext.Provider value={value}>
       {children}
     </ThemeContext.Provider>
   );

@@ -33,15 +33,8 @@ export const useUser = () => {
           updateUser(result.data.user);
           showToast("Profile updated successfully", "success");
           return true;
-        } else {
-          showToast(result.message || "Failed to update profile", "error");
-          return false;
         }
-      } catch (error: any) {
-        showToast(
-          error.message || "Failed to update profile. Please try again.",
-          "error"
-        );
+        showToast(result.message || "Failed to update profile", "error");
         return false;
       } finally {
         setLoading(false);
@@ -94,15 +87,8 @@ export const useUser = () => {
         if (result.success) {
           showToast("Password changed successfully", "success");
           return true;
-        } else {
-          showToast(result.message || "Failed to change password", "error");
-          return false;
         }
-      } catch (error: any) {
-        showToast(
-          error.message || "Failed to change password. Please try again.",
-          "error"
-        );
+        showToast(result.message || "Failed to change password", "error");
         return false;
       } finally {
         setLoading(false);
@@ -125,17 +111,12 @@ export const useUser = () => {
 
         if (result.success) {
           showToast("Account deleted successfully", "success");
+          // Clearing auth state re-renders the app to the auth screen; callers
+          // must not also invoke a parent logout handler.
           await logout();
           return true;
-        } else {
-          showToast(result.message || "Failed to delete account", "error");
-          return false;
         }
-      } catch (error: any) {
-        showToast(
-          error.message || "Failed to delete account. Please try again.",
-          "error"
-        );
+        showToast(result.message || "Failed to delete account", "error");
         return false;
       } finally {
         setDeleteLoading(false);

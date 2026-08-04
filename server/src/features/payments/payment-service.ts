@@ -1,5 +1,4 @@
 import { Payment, IPayment } from "../../models/payment";
-import { User } from "../../models/user";
 import { CreatePaymentRequest, UpdatePaymentRequest } from "../../types";
 import { createError } from "../../utils/error-handler";
 import { logger } from "../../utils/logger";
@@ -10,12 +9,6 @@ export class PaymentService {
     paymentData: CreatePaymentRequest
   ): Promise<IPayment> {
     try {
-      // Validate user exists
-      const user = await User.findById(userId);
-      if (!user) {
-        throw createError("User not found", 404);
-      }
-
       const payment = new Payment({
         userId,
         ...paymentData,
@@ -32,7 +25,7 @@ export class PaymentService {
     }
   }
 
-  async getPayments(userId: string, type?: string): Promise<IPayment[]> {
+  async getPayments(userId: string, type?: string, limit = 50, cursor?: string): Promise<IPayment[]> {
     try {
       const query: Record<string, string> = { userId };
 
@@ -40,9 +33,9 @@ export class PaymentService {
         query.type = type;
       }
 
-      const payments = await Payment.find(query)
-        .sort({ createdAt: -1 })
-        .populate("userId", "name email");
+      const filter: any = { ...query };
+      if (cursor) filter.createdAt = { $lt: new Date(cursor) };
+      const payments = await Payment.find(filter).sort({ createdAt: -1 }).limit(Math.min(limit, 100)).lean();
 
       logger.info("Payments retrieved", { count: payments.length, userId });
       return payments;
@@ -54,7 +47,7 @@ export class PaymentService {
 
   async getPaymentById(userId: string, paymentId: string): Promise<IPayment> {
     try {
-      const payment = await Payment.findOne({ _id: paymentId, userId });
+      const payment = await Payment.findOne({ _id: paymentId, userId }).lean();
 
       if (!payment) {
         throw createError("Payment not found", 404);
@@ -73,11 +66,16 @@ export class PaymentService {
     updateData: UpdatePaymentRequest
   ): Promise<IPayment> {
     try {
+      const allowed: any = {};
+      if (updateData.type !== undefined) allowed.type = updateData.type;
+      if (updateData.personName !== undefined) allowed.personName = updateData.personName;
+      if (updateData.amount !== undefined) allowed.amount = updateData.amount;
+      if (updateData.description !== undefined) allowed.description = updateData.description;
+      if (updateData.dueDate !== undefined) allowed.dueDate = new Date(updateData.dueDate);
       const payment = await Payment.findOneAndUpdate(
         { _id: paymentId, userId },
         {
-          ...updateData,
-          ...(updateData.dueDate && { dueDate: new Date(updateData.dueDate) }),
+          $set: allowed,
         },
         { new: true, runValidators: true }
       );
@@ -99,36 +97,24 @@ export class PaymentService {
     paymentId: string
   ): Promise<IPayment | null> {
     try {
-      const payment = await Payment.findOne({ _id: paymentId, userId });
+      const existing = await Payment.findOne({ _id: paymentId, userId }).lean();
 
-      if (!payment) {
+      if (!existing) {
         throw createError("Payment not found", 404);
       }
 
-      // Toggle status based on type
-      if (payment.type === "to_pay") {
-        payment.status = payment.status === "paid" ? "unpaid" : "paid";
-      } else {
-        payment.status = payment.status === "received" ? "pending" : "received";
-      }
+      const nextStatus = existing.type === "to_pay" ? (existing.status === "paid" ? "unpaid" : "paid") : (existing.status === "received" ? "pending" : "received");
+      const payment = await Payment.findOneAndUpdate({ _id: paymentId, userId, status: existing.status }, { $set: { status: nextStatus } }, { new: true, runValidators: true }).lean();
 
-      await payment.save();
+      if (!payment) {
+        throw createError("Payment was modified by another request", 409);
+      }
 
       logger.info("Payment status toggled", {
         paymentId,
         userId,
         newStatus: payment.status,
       });
-
-      // If payment is now paid/received, delete it from database
-      if (payment.status === "paid" || payment.status === "received") {
-        await Payment.findByIdAndDelete(paymentId);
-        logger.info("Payment deleted after being marked as paid/received", {
-          paymentId,
-          userId,
-        });
-        return null; // Return null to indicate payment was deleted
-      }
 
       return payment;
     } catch (error) {
@@ -168,24 +154,7 @@ export class PaymentService {
     overduePayments: number;
   }> {
     try {
-      const payments = await Payment.find({ userId });
-
-      const now = new Date();
-      const stats = {
-        totalPayments: payments.length,
-        totalAmount: payments.reduce((sum, p) => sum + p.amount, 0),
-        paidPayments: payments.filter(
-          (p) => p.status === "paid" || p.status === "received"
-        ).length,
-        unpaidPayments: payments.filter(
-          (p) => p.status === "unpaid" || p.status === "pending"
-        ).length,
-        overduePayments: payments.filter(
-          (p) =>
-            (p.status === "unpaid" || p.status === "pending") &&
-            new Date(p.dueDate) < now
-        ).length,
-      };
+      const [stats] = await Payment.aggregate([{ $match: { userId: new (require('mongoose').Types.ObjectId)(userId) } }, { $group: { _id: null, totalPayments: { $sum: 1 }, totalAmount: { $sum: '$amount' }, paidPayments: { $sum: { $cond: [{ $in: ['$status', ['paid','received']] }, 1, 0] } }, unpaidPayments: { $sum: { $cond: [{ $in: ['$status', ['unpaid','pending']] }, 1, 0] } }, overduePayments: { $sum: { $cond: [{ $and: [{ $in: ['$status', ['unpaid','pending']] }, { $lt: ['$dueDate', new Date()] }] }, 1, 0] } } } }]);
 
       logger.info("Payment stats retrieved", { userId, stats });
       return stats;
@@ -209,7 +178,7 @@ export class PaymentService {
         userId,
         count: uniqueNames.length,
       });
-      return uniqueNames;
+      return await Payment.distinct("personName", { userId });
     } catch (error) {
       logger.error("Error retrieving previous users", { error, userId });
       throw error;

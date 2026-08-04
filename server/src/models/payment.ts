@@ -46,7 +46,7 @@ const paymentSchema = new Schema<IPayment>(
       type: String,
       enum: ["paid", "unpaid", "received", "pending"],
       required: true,
-      default: function () {
+      default: function (this: IPayment) {
         return this.type === "to_pay" ? "unpaid" : "pending";
       },
     },
@@ -57,6 +57,8 @@ const paymentSchema = new Schema<IPayment>(
 );
 
 // Index for efficient queries
-paymentSchema.index({ userId: 1, type: 1, status: 1 });
+paymentSchema.index({ userId: 1, createdAt: -1 });
+paymentSchema.index({ userId: 1, type: 1, createdAt: -1 });
+paymentSchema.index({ userId: 1, personName: 1 });
 
 export const Payment = mongoose.model<IPayment>("Payment", paymentSchema);

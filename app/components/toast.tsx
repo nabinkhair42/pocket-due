@@ -24,12 +24,18 @@ export const Toast: React.FC<ToastProps> = ({
   const { theme } = useTheme();
   const colors = getThemeColors(theme);
   const translateY = useRef(new Animated.Value(100)).current;
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Safe bottom padding for different platforms
   const bottomPadding = Platform.OS === "ios" ? 34 : 16;
 
   useEffect(() => {
     if (visible) {
+      // Clear any existing timer
+      if (timerRef.current) {
+        clearTimeout(timerRef.current);
+      }
+
       // Slide up from bottom
       Animated.spring(translateY, {
         toValue: 0,
@@ -38,15 +44,22 @@ export const Toast: React.FC<ToastProps> = ({
         stiffness: 300,
       }).start();
 
-      const timer = setTimeout(() => {
+      timerRef.current = setTimeout(() => {
         hideToast();
       }, duration);
 
-      return () => clearTimeout(timer);
+      return () => {
+        if (timerRef.current) {
+          clearTimeout(timerRef.current);
+        }
+      };
     } else {
       translateY.setValue(100);
     }
-  }, [visible]);
+    // `message`/`variant` are dependencies too: a second toast raised while one
+    // is still showing doesn't change `visible`, so without them the first
+    // toast's timer would survive and cut the new message short.
+  }, [visible, message, variant, duration]);
 
   const hideToast = () => {
     Animated.timing(translateY, {
@@ -132,6 +145,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     borderRadius: radius.md,
     gap: spacing.md,
+    minHeight: 44,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.18,
+    shadowRadius: 8,
+    elevation: 4,
   },
   message: {
     flex: 1,

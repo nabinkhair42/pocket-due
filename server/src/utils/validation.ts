@@ -14,10 +14,15 @@ export interface ValidationRule {
   message?: string;
 }
 
-export const validateRequest = (rules: ValidationRule[]) => {
+export const validateRequest = (rules: ValidationRule[], options?: { rejectUnknown?: boolean }) => {
   return (req: Request, res: Response, next: NextFunction) => {
     const errors: string[] = [];
     const data = req.body;
+    if (options?.rejectUnknown) {
+      const allowed = new Set(rules.map((r) => r.field));
+      const unknown = Object.keys(data || {}).filter((k) => !allowed.has(k));
+      if (unknown.length) return res.status(400).json({ success: false, error: `Unknown fields: ${unknown.join(", ")}` });
+    }
 
     rules.forEach((rule) => {
       const value = data[rule.field];

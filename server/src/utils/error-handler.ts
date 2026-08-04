@@ -43,7 +43,10 @@ export const errorHandler = (
 
   // If it's not our custom error, create one
   if (!(error instanceof AppError)) {
-    error = new AppError(error.message || "Something went wrong", 500);
+    const anyErr = error as any;
+    if (anyErr?.name === "ValidationError") error = new AppError("Invalid request data", 400);
+    else if (anyErr?.code === 11000) error = new AppError("Resource already exists", 409);
+    else error = new AppError("Internal server error", 500, false);
   }
 
   const appError = error as AppError;
@@ -56,7 +59,7 @@ export const errorHandler = (
       statusCode: appError.statusCode,
       url: req.url,
       method: req.method,
-      body: req.body,
+      body: { ...req.body, password: undefined, currentPassword: undefined, newPassword: undefined, token: undefined },
       user: (req as unknown as { user?: { _id: string } }).user?._id,
     });
   }
@@ -64,8 +67,8 @@ export const errorHandler = (
   // Send error response
   res.status(appError.statusCode).json({
     success: false,
-    message: appError.message,
-    error: appError.message,
+    message: appError.isOperational ? appError.message : "Internal server error",
+    error: appError.isOperational ? appError.message : "Internal server error",
     ...(process.env.NODE_ENV === "development" && { stack: appError.stack }),
   });
 };

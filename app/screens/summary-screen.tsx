@@ -19,7 +19,7 @@ import { SummaryCardSkeleton } from "../components/summary-card-skeleton";
 import { useTheme } from "../contexts/ThemeContext";
 import { useToast } from "../contexts/toast-context";
 import { usePayment } from "../hooks/use-payment";
-import { getThemeColors, spacing, radius, typography } from "../lib/theme";
+import { getThemeColors, spacing, radius, typography, numericTextStyle } from "../lib/theme";
 import { PaymentSummary } from "../types/api";
 
 interface SummaryScreenProps {
@@ -188,12 +188,10 @@ export const SummaryScreen: React.FC<SummaryScreenProps> = ({ onBack }) => {
   }, []);
 
   const loadSummaries = async () => {
-    try {
-      await getPaymentSummaries();
-    } catch (error) {
+    const result = await getPaymentSummaries();
+    setRefreshing(false);
+    if (!result.ok && result.error !== "UNAUTHORIZED") {
       showToast("Failed to load summaries", "error");
-    } finally {
-      setRefreshing(false);
     }
   };
 
@@ -275,7 +273,6 @@ export const SummaryScreen: React.FC<SummaryScreenProps> = ({ onBack }) => {
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       <StatusBar
         barStyle={theme === "dark" ? "light-content" : "dark-content"}
-        backgroundColor={colors.background}
       />
 
       <View style={[styles.header, { borderBottomColor: colors.border }]}>
@@ -283,6 +280,9 @@ export const SummaryScreen: React.FC<SummaryScreenProps> = ({ onBack }) => {
           onPress={onBack}
           style={[styles.backButton, { backgroundColor: colors.surfaceSecondary }]}
           activeOpacity={0.7}
+          accessibilityRole="button"
+          accessibilityLabel="Go back"
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
         >
           <ChevronLeft size={20} color={colors.textPrimary} />
         </TouchableOpacity>
@@ -387,6 +387,7 @@ const styles = StyleSheet.create({
   },
   netAmount: {
     ...typography.h3,
+    ...numericTextStyle,
   },
   cardDetails: {
     gap: spacing.xs,
@@ -400,6 +401,7 @@ const styles = StyleSheet.create({
   },
   detailAmount: {
     ...typography.captionMedium,
+    ...numericTextStyle,
   },
   cardFooter: {
     borderTopWidth: 1,
@@ -462,8 +464,8 @@ const styles = StyleSheet.create({
     marginBottom: spacing.xs,
   },
   netTotal: {
-    fontSize: 32,
-    fontWeight: "700",
+    ...typography.h1,
+    ...numericTextStyle,
     marginBottom: spacing.lg,
   },
   summaryBreakdown: {
@@ -478,6 +480,7 @@ const styles = StyleSheet.create({
   },
   breakdownAmount: {
     ...typography.bodySemibold,
+    ...numericTextStyle,
   },
   paymentsSection: {
     marginBottom: spacing.xl,
@@ -504,6 +507,7 @@ const styles = StyleSheet.create({
   },
   paymentAmount: {
     ...typography.bodySemibold,
+    ...numericTextStyle,
   },
   paymentDescription: {
     ...typography.caption,

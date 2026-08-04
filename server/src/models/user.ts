@@ -27,29 +27,27 @@ const userSchema = new Schema<IUser>(
     password: {
       type: String,
       minlength: 6,
+      select: false,
     },
   },
   {
     timestamps: true,
-  }
+    toJSON: { transform: (_doc, ret) => { delete ret.password; return ret; } },
+    toObject: { transform: (_doc, ret) => { delete ret.password; return ret; } },
+  },
 );
 
 // Hash password before saving
-userSchema.pre("save", async function (next) {
-  if (!this.isModified("password")) return next();
+userSchema.pre("save", async function () {
+  if (!this.isModified("password")) return;
 
-  try {
-    const salt = await bcrypt.genSalt(10);
-    this.password = await bcrypt.hash(this.password!, salt);
-    next();
-  } catch (error) {
-    next(error as Error);
-  }
+  const salt = await bcrypt.genSalt(10);
+  this.password = await bcrypt.hash(this.password!, salt);
 });
 
 // Compare password method
 userSchema.methods.comparePassword = async function (
-  candidatePassword: string
+  candidatePassword: string,
 ): Promise<boolean> {
   if (!this.password) return false;
   return bcrypt.compare(candidatePassword, this.password);

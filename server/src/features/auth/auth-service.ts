@@ -3,12 +3,15 @@ import { LoginRequest, RegisterRequest } from "../../types";
 import { generateToken } from "../../middleware/auth";
 import { createError } from "../../utils/error-handler";
 import { logger } from "../../utils/logger";
+import { Payment } from "../../models/payment";
+import mongoose from "mongoose";
 
 export class AuthService {
   async register(
     userData: RegisterRequest
   ): Promise<{ user: IUser; token: string }> {
     try {
+      userData.email = userData.email.trim().toLowerCase();
       // Check if user already exists
       const existingUser = await User.findOne({ email: userData.email });
       if (existingUser) {
@@ -25,7 +28,7 @@ export class AuthService {
       await user.save();
 
       // Generate token
-      const token = generateToken((user._id as string).toString(), user.email);
+      const token = generateToken(user._id.toString(), user.email);
 
       logger.info("User registered", { userId: user._id, email: user.email });
 
@@ -41,7 +44,8 @@ export class AuthService {
   ): Promise<{ user: IUser; token: string }> {
     try {
       // Find user
-      const user = await User.findOne({ email: credentials.email });
+      const email = credentials.email.trim().toLowerCase();
+      const user = await User.findOne({ email }).select("+password");
       if (!user) {
         throw createError("Invalid credentials", 401);
       }
@@ -53,7 +57,7 @@ export class AuthService {
       }
 
       // Generate token
-      const token = generateToken((user._id as string).toString(), user.email);
+      const token = generateToken(user._id.toString(), user.email);
 
       logger.info("User logged in", { userId: user._id, email: user.email });
 
@@ -87,6 +91,7 @@ export class AuthService {
     updateData: { name?: string; email?: string }
   ): Promise<IUser> {
     try {
+      if (updateData.email) updateData.email = updateData.email.trim().toLowerCase();
       const user = await User.findByIdAndUpdate(userId, updateData, {
         new: true,
         runValidators: true,
@@ -110,7 +115,7 @@ export class AuthService {
     newPassword: string
   ): Promise<void> {
     try {
-      const user = await User.findById(userId);
+      const user = await User.findById(userId).select("+password");
 
       if (!user) {
         throw createError("User not found", 404);
@@ -137,7 +142,7 @@ export class AuthService {
 
   async deleteAccount(userId: string, password: string): Promise<void> {
     try {
-      const user = await User.findById(userId);
+      const user = await User.findById(userId).select("+password");
 
       if (!user) {
         throw createError("User not found", 404);
@@ -149,8 +154,15 @@ export class AuthService {
         throw createError("Password is incorrect", 400);
       }
 
-      // Delete user (this will cascade to payments if foreign key constraints are set up)
-      await User.findByIdAndDelete(userId);
+      const session = await mongoose.startSession();
+      try {
+        await session.withTransaction(async () => {
+          await Payment.deleteMany({ userId }, { session });
+          await User.deleteOne({ _id: userId }, { session });
+        });
+      } finally {
+        await session.endSession();
+      }
 
       logger.info("User account deleted", { userId });
     } catch (error) {

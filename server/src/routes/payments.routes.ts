@@ -19,7 +19,9 @@ router.get(
   "/",
   handleAsync(async (req: Request, res: Response) => {
     const userId = (req as unknown as { user: { _id: string } }).user._id;
-    const payments = await paymentService.getPayments(userId);
+    const limit = Number(req.query.limit) || 50;
+    const cursor = typeof req.query.cursor === "string" ? req.query.cursor : undefined;
+    const payments = await paymentService.getPayments(userId, undefined, limit, cursor);
 
     res.json({
       success: true,
@@ -33,7 +35,7 @@ router.get(
 router.get(
   "/type/:type",
   handleAsync(async (req: Request, res: Response) => {
-    const { type } = req.params;
+    const type = String(req.params.type);
     const userId = (req as unknown as { user: { _id: string } }).user._id;
 
     if (!["to_pay", "to_receive"].includes(type)) {
@@ -73,7 +75,6 @@ router.get(
 // Get previous users for dropdown
 router.get(
   "/previous-users",
-  authenticateToken as unknown as RequestHandler,
   handleAsync(async (req: Request, res: Response) => {
     const userId = (req as unknown as { user: { _id: string } }).user._id;
     const previousUsers = await paymentService.getPreviousUsers(userId);
@@ -89,7 +90,7 @@ router.get(
 // Create new payment
 router.post(
   "/",
-  validateRequest(paymentValidationRules),
+  validateRequest(paymentValidationRules, { rejectUnknown: true }),
   handleAsync(async (req: Request, res: Response) => {
     const { type, personName, description, amount, dueDate } =
       req.body as CreatePaymentRequest;
@@ -114,9 +115,9 @@ router.post(
 // Update payment
 router.put(
   "/:id",
-  validateRequest(updatePaymentValidationRules),
+  validateRequest(updatePaymentValidationRules, { rejectUnknown: true }),
   handleAsync(async (req: Request, res: Response) => {
-    const { id } = req.params;
+    const id = String(req.params.id);
     const userId = (req as unknown as { user: { _id: string } }).user._id;
     const updateData = req.body as UpdatePaymentRequest;
 
@@ -134,25 +135,12 @@ router.put(
 router.patch(
   "/:id/toggle",
   handleAsync(async (req: Request, res: Response) => {
-    const { id } = req.params;
+    const id = String(req.params.id);
     const userId = (req as unknown as { user: { _id: string } }).user._id;
 
     const payment = await paymentService.togglePaymentStatus(userId, id);
 
-    // If payment is null, it means it was deleted after being marked as paid/received
-    if (payment === null) {
-      res.json({
-        success: true,
-        message: "Payment completed and removed from list",
-        data: { payment: null, deleted: true },
-      });
-    } else {
-      res.json({
-        success: true,
-        message: "Payment status updated successfully",
-        data: { payment, deleted: false },
-      });
-    }
+    res.json({ success: true, message: "Payment status updated successfully", data: { payment, deleted: false } });
   })
 );
 
@@ -160,7 +148,7 @@ router.patch(
 router.delete(
   "/:id",
   handleAsync(async (req: Request, res: Response) => {
-    const { id } = req.params;
+    const id = String(req.params.id);
     const userId = (req as unknown as { user: { _id: string } }).user._id;
 
     const payment = await paymentService.deletePayment(userId, id);
@@ -176,10 +164,9 @@ router.delete(
 // Get payment summaries grouped by person
 router.get(
   "/summaries",
-  authenticateToken as unknown as RequestHandler,
   async (req: Request, res: Response) => {
     try {
-      const userId = (req.user as { id: string }).id;
+      const userId = String((req.user as { _id: unknown })._id);
 
       const payments = await paymentService.getPayments(userId);
 

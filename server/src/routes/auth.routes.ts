@@ -3,6 +3,7 @@ import { authService } from "../features/auth/auth-service";
 import { authenticateToken } from "../middleware/auth";
 import { AuthRequest, LoginRequest, RegisterRequest } from "../types";
 import { handleAsync } from "../utils/error-handler";
+import { authRateLimit } from "../middleware/rate-limit";
 import {
   authValidationRules,
   registerValidationRules,
@@ -14,6 +15,7 @@ const router = express.Router();
 // Register
 router.post(
   "/register",
+  authRateLimit.middleware,
   validateRequest(registerValidationRules),
   handleAsync(async (req: Request, res: Response): Promise<void> => {
     const userData = req.body as RegisterRequest;
@@ -30,6 +32,7 @@ router.post(
 // Login
 router.post(
   "/login",
+  authRateLimit.middleware,
   validateRequest(authValidationRules),
   handleAsync(async (req: Request, res: Response): Promise<void> => {
     const credentials = req.body as LoginRequest;

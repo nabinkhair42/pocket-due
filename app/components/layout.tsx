@@ -89,8 +89,8 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   backButton: {
-    width: 36,
-    height: 36,
+    width: 44,
+    height: 44,
     borderRadius: radius.md,
     justifyContent: "center",
     alignItems: "center",

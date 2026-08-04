@@ -82,7 +82,8 @@ export const apiRateLimit = new RateLimiter({
 });
 
 // Clean up old entries every 5 minutes
-setInterval(() => {
+const cleanupTimer = setInterval(() => {
   authRateLimit.cleanup();
   apiRateLimit.cleanup();
 }, 5 * 60 * 1000);
+cleanupTimer.unref();

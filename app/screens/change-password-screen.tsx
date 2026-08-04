@@ -7,6 +7,8 @@ import {
   StyleSheet,
   ScrollView,
   StatusBar,
+  KeyboardAvoidingView,
+  Platform,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { ChevronLeft, Lock, Eye, EyeOff, Save } from "lucide-react-native";
@@ -69,7 +71,12 @@ export const ChangePasswordScreen: React.FC<ChangePasswordScreenProps> = ({
         secureTextEntry={!showPassword}
         autoCapitalize="none"
       />
-      <TouchableOpacity onPress={onToggleVisibility}>
+      <TouchableOpacity
+        onPress={onToggleVisibility}
+        accessibilityRole="button"
+        accessibilityLabel={showPassword ? "Hide password" : "Show password"}
+        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+      >
         {showPassword ? (
           <EyeOff size={18} color={colors.textTertiary} />
         ) : (
@@ -83,7 +90,6 @@ export const ChangePasswordScreen: React.FC<ChangePasswordScreenProps> = ({
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       <StatusBar
         barStyle={theme === "dark" ? "light-content" : "dark-content"}
-        backgroundColor={colors.background}
       />
 
       <View style={[styles.header, { borderBottomColor: colors.border }]}>
@@ -91,6 +97,9 @@ export const ChangePasswordScreen: React.FC<ChangePasswordScreenProps> = ({
           onPress={onBack}
           style={[styles.backButton, { backgroundColor: colors.surfaceSecondary }]}
           activeOpacity={0.7}
+          accessibilityRole="button"
+          accessibilityLabel="Go back"
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
         >
           <ChevronLeft size={20} color={colors.textPrimary} />
         </TouchableOpacity>
@@ -100,7 +109,15 @@ export const ChangePasswordScreen: React.FC<ChangePasswordScreenProps> = ({
         <View style={styles.headerSpacer} />
       </View>
 
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+      <KeyboardAvoidingView
+        style={styles.flex}
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
+      >
+        <ScrollView
+          style={styles.content}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
         <View style={styles.section}>
           <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>
             Password Security
@@ -176,12 +193,16 @@ export const ChangePasswordScreen: React.FC<ChangePasswordScreenProps> = ({
           </Button>
         </View>
       </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
+    flex: 1,
+  },
+  flex: {
     flex: 1,
   },
   header: {
@@ -242,6 +263,7 @@ const styles = StyleSheet.create({
   input: {
     flex: 1,
     ...typography.body,
+    minHeight: 24,
   },
   requirements: {
     padding: spacing.lg,

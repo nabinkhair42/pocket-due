@@ -1,4 +1,5 @@
 import { Theme } from "../contexts/ThemeContext";
+import type { TextStyle } from "react-native";
 
 // Spacing scale (4px base unit)
 export const spacing = {
@@ -22,70 +23,72 @@ export const radius = {
 
 // Typography scale
 export const typography = {
-  h1: { fontSize: 28, fontWeight: "700" as const, lineHeight: 34 },
+  h1: { fontSize: 30, fontWeight: "700" as const, lineHeight: 36, letterSpacing: -0.3 },
   h2: { fontSize: 22, fontWeight: "600" as const, lineHeight: 28 },
   h3: { fontSize: 18, fontWeight: "600" as const, lineHeight: 24 },
-  body: { fontSize: 15, fontWeight: "400" as const, lineHeight: 22 },
-  bodyMedium: { fontSize: 15, fontWeight: "500" as const, lineHeight: 22 },
-  bodySemibold: { fontSize: 15, fontWeight: "600" as const, lineHeight: 22 },
+  body: { fontSize: 16, fontWeight: "400" as const, lineHeight: 24 },
+  bodyMedium: { fontSize: 16, fontWeight: "500" as const, lineHeight: 24 },
+  bodySemibold: { fontSize: 16, fontWeight: "600" as const, lineHeight: 24 },
   caption: { fontSize: 13, fontWeight: "400" as const, lineHeight: 18 },
   captionMedium: { fontSize: 13, fontWeight: "500" as const, lineHeight: 18 },
-  small: { fontSize: 11, fontWeight: "500" as const, lineHeight: 14 },
-  button: { fontSize: 15, fontWeight: "600" as const, lineHeight: 20 },
+  small: { fontSize: 12, fontWeight: "500" as const, lineHeight: 16 },
+  button: { fontSize: 16, fontWeight: "600" as const, lineHeight: 22 },
 } as const;
+
+export const numericTextStyle: TextStyle = { fontVariant: ["tabular-nums"] };
 
 export const themeColors = {
   light: {
     // Background colors
-    background: "#F8F9FA",
+    background: "#F8FAFC",
     surface: "#FFFFFF",
-    surfaceSecondary: "#F1F3F5",
-    surfaceTertiary: "#E9ECEF",
+    surfaceSecondary: "#F1F5F9",
+    surfaceTertiary: "#E2E8F0",
 
     // Text colors
-    textPrimary: "#212529",
-    textSecondary: "#495057",
-    textTertiary: "#868E96",
-    textDisabled: "#ADB5BD",
+    textPrimary: "#0F172A",
+    textSecondary: "#334155",
+    textTertiary: "#64748B",
+    textDisabled: "#94A3B8",
 
     // Border colors
-    border: "#DEE2E6",
-    borderLight: "#E9ECEF",
+    border: "#CBD5E1",
+    borderLight: "#E2E8F0",
 
     // Brand colors - Clean blue palette
-    primary: "#228BE6",
-    primaryLight: "#E7F5FF",
-    primaryDark: "#1C7ED6",
+    primary: "#1D4ED8",
+    primaryLight: "#DBEAFE",
+    primaryDark: "#1E40AF",
 
     // Accent colors
-    accent: "#7950F2",
-    accentLight: "#F3F0FF",
+    accent: "#6D28D9",
+    accentLight: "#EDE9FE",
 
     // Status colors - Softer, more modern
-    success: "#40C057",
-    successLight: "#EBFBEE",
-    successDark: "#37B24D",
+    success: "#15803D",
+    successLight: "#DCFCE7",
+    successDark: "#166534",
 
-    warning: "#FAB005",
-    warningLight: "#FFF9DB",
-    warningDark: "#F59F00",
+    warning: "#A16207",
+    warningLight: "#FEF3C7",
+    warningDark: "#854D0E",
 
-    error: "#FA5252",
-    errorLight: "#FFF5F5",
-    errorDark: "#F03E3E",
+    error: "#B91C1C",
+    errorLight: "#FEE2E2",
+    errorDark: "#991B1B",
 
-    info: "#228BE6",
-    infoLight: "#E7F5FF",
+    info: "#1D4ED8",
+    infoLight: "#DBEAFE",
 
     // Card colors
     cardBackground: "#FFFFFF",
     cardShadow: "rgba(0, 0, 0, 0.04)",
-    cardBorder: "#F1F3F5",
+    cardBorder: "#E2E8F0",
 
     // Gradient colors
-    gradientPrimary: ["#339AF0", "#228BE6"],
-    gradientSuccess: ["#51CF66", "#40C057"],
-    gradientError: ["#FF6B6B", "#FA5252"],
+    gradientPrimary: ["#2563EB", "#1D4ED8"],
+    gradientSuccess: ["#16A34A", "#15803D"],
+    gradientError: ["#DC2626", "#B91C1C"],
 
     // Overlay colors
     overlay: "rgba(0, 0, 0, 0.5)",
@@ -96,60 +99,60 @@ export const themeColors = {
     black: "#000000",
 
     // FAB colors
-    fab: "#228BE6",
+    fab: "#1D4ED8",
     fabIcon: "#FFFFFF",
   },
   dark: {
     // Background colors
-    background: "#0D1117",
-    surface: "#161B22",
-    surfaceSecondary: "#21262D",
-    surfaceTertiary: "#30363D",
+    background: "#0B1220",
+    surface: "#111827",
+    surfaceSecondary: "#1F2937",
+    surfaceTertiary: "#334155",
 
     // Text colors
-    textPrimary: "#F0F6FC",
-    textSecondary: "#8B949E",
-    textTertiary: "#6E7681",
-    textDisabled: "#484F58",
+    textPrimary: "#F8FAFC",
+    textSecondary: "#CBD5E1",
+    textTertiary: "#94A3B8",
+    textDisabled: "#64748B",
 
     // Border colors
-    border: "#30363D",
-    borderLight: "#21262D",
+    border: "#475569",
+    borderLight: "#334155",
 
     // Brand colors - Adjusted for dark mode
-    primary: "#58A6FF",
-    primaryLight: "#1F3A5F",
-    primaryDark: "#388BFD",
+    primary: "#60A5FA",
+    primaryLight: "#172554",
+    primaryDark: "#93C5FD",
 
     // Accent colors
     accent: "#A371F7",
     accentLight: "#2D2052",
 
     // Status colors - Adjusted for dark mode
-    success: "#3FB950",
-    successLight: "#1B4332",
-    successDark: "#2EA043",
+    success: "#4ADE80",
+    successLight: "#14532D",
+    successDark: "#86EFAC",
 
-    warning: "#D29922",
-    warningLight: "#3D2E00",
-    warningDark: "#BB8009",
+    warning: "#FACC15",
+    warningLight: "#422006",
+    warningDark: "#FDE047",
 
-    error: "#F85149",
-    errorLight: "#4A1D1D",
-    errorDark: "#DA3633",
+    error: "#F87171",
+    errorLight: "#450A0A",
+    errorDark: "#FCA5A5",
 
-    info: "#58A6FF",
-    infoLight: "#1F3A5F",
+    info: "#60A5FA",
+    infoLight: "#172554",
 
     // Card colors
     cardBackground: "#161B22",
     cardShadow: "rgba(0, 0, 0, 0.3)",
-    cardBorder: "#30363D",
+    cardBorder: "#334155",
 
     // Gradient colors
-    gradientPrimary: ["#58A6FF", "#388BFD"],
-    gradientSuccess: ["#56D364", "#3FB950"],
-    gradientError: ["#FF7B72", "#F85149"],
+    gradientPrimary: ["#60A5FA", "#3B82F6"],
+    gradientSuccess: ["#86EFAC", "#4ADE80"],
+    gradientError: ["#FCA5A5", "#F87171"],
 
     // Overlay colors
     overlay: "rgba(0, 0, 0, 0.7)",
@@ -160,7 +163,7 @@ export const themeColors = {
     black: "#000000",
 
     // FAB colors
-    fab: "#58A6FF",
+    fab: "#1D4ED8",
     fabIcon: "#FFFFFF",
   },
 };

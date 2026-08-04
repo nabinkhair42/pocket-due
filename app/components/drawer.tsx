@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   Animated,
   Dimensions,
@@ -35,12 +35,40 @@ export const Drawer: React.FC<DrawerProps> = ({
   const insets = useSafeAreaInsets();
   const translateY = useRef(new Animated.Value(SCREEN_HEIGHT)).current;
   const backdropOpacity = useRef(new Animated.Value(0)).current;
+  // Kept mounted through the exit animation. Without this, a parent setting
+  // visible=false made the drawer vanish instantly, while swipe-to-dismiss
+  // animated — the same action looked different depending on how it started.
+  const [isRendered, setIsRendered] = useState(visible);
 
   // Calculate drawer height - use provided height or auto-size
   const drawerHeight = height || SCREEN_HEIGHT * 0.5;
 
+  const animateOut = useCallback(
+    (onDone?: () => void) => {
+      Animated.parallel([
+        Animated.timing(translateY, {
+          toValue: drawerHeight,
+          duration: 200,
+          useNativeDriver: true,
+        }),
+        Animated.timing(backdropOpacity, {
+          toValue: 0,
+          duration: 200,
+          useNativeDriver: true,
+        }),
+      ]).start(({ finished }) => {
+        if (finished) {
+          setIsRendered(false);
+          onDone?.();
+        }
+      });
+    },
+    [drawerHeight, translateY, backdropOpacity]
+  );
+
   useEffect(() => {
     if (visible) {
+      setIsRendered(true);
       // Reset position before animating in
       translateY.setValue(drawerHeight);
 
@@ -57,28 +85,27 @@ export const Drawer: React.FC<DrawerProps> = ({
           useNativeDriver: true,
         }),
       ]).start();
+    } else if (isRendered) {
+      animateOut();
     }
   }, [visible, drawerHeight]);
 
-  const closeDrawer = () => {
-    Animated.parallel([
-      Animated.timing(translateY, {
-        toValue: drawerHeight,
-        duration: 200,
-        useNativeDriver: true,
-      }),
-      Animated.timing(backdropOpacity, {
-        toValue: 0,
-        duration: 200,
-        useNativeDriver: true,
-      }),
-    ]).start(() => {
-      onClose();
-    });
-  };
+  const closeDrawer = useCallback(() => {
+    animateOut(onClose);
+  }, [animateOut, onClose]);
 
-  const panResponder = useRef(
-    PanResponder.create({
+  // The gesture handler below is created once, so it reads the latest close
+  // callback through a ref rather than capturing a stale one.
+  const closeDrawerRef = useRef(closeDrawer);
+  closeDrawerRef.current = closeDrawer;
+
+  // Created once. Passing PanResponder.create(...) straight to useRef would
+  // re-evaluate it on every render and throw the result away.
+  const panResponderRef = useRef<ReturnType<
+    typeof PanResponder.create
+  > | null>(null);
+  if (panResponderRef.current === null) {
+    panResponderRef.current = PanResponder.create({
       onStartShouldSetPanResponder: () => true,
       onMoveShouldSetPanResponder: (_, gestureState) => {
         return gestureState.dy > 5;
@@ -90,7 +117,7 @@ export const Drawer: React.FC<DrawerProps> = ({
       },
       onPanResponderRelease: (_, gestureState) => {
         if (gestureState.dy > DRAG_THRESHOLD || gestureState.vy > 0.5) {
-          closeDrawer();
+          closeDrawerRef.current();
         } else {
           Animated.spring(translateY, {
             toValue: 0,
@@ -100,14 +127,15 @@ export const Drawer: React.FC<DrawerProps> = ({
           }).start();
         }
       },
-    })
-  ).current;
+    });
+  }
+  const panResponder = panResponderRef.current;
 
-  if (!visible) return null;
+  if (!visible && !isRendered) return null;
 
   return (
     <Modal
-      visible={visible}
+      visible
       transparent
       animationType="none"
       onRequestClose={closeDrawer}
@@ -163,10 +191,16 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: radius.xl,
     borderTopRightRadius: radius.xl,
     overflow: "hidden",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.12,
+    shadowRadius: 12,
+    elevation: 8,
   },
   handleContainer: {
     alignItems: "center",
     paddingVertical: spacing.md,
+    minHeight: 44,
   },
   handle: {
     width: 40,

@@ -1,6 +1,7 @@
-import { Plus, Settings, BarChart3, WalletCards } from "lucide-react-native";
-import React, { useEffect, useState } from "react";
+import { Plus, Settings, BarChart3, WalletCards, WifiOff } from "lucide-react-native";
+import React, { useCallback, useEffect, useState } from "react";
 import {
+  BackHandler,
   FlatList,
   RefreshControl,
   StyleSheet,
@@ -16,7 +17,6 @@ import { PaymentCardSkeleton } from "../components/payment-card-skeleton";
 import { Tabs } from "../components/tabs";
 import { useTheme } from "../contexts/ThemeContext";
 import { useToast } from "../contexts/toast-context";
-import { useAuth } from "../hooks/use-auth";
 import { usePayment } from "../hooks/use-payment";
 import { apiService } from "../lib/api";
 import { getThemeColors, spacing, radius, typography, shadows } from "../lib/theme";
@@ -25,11 +25,7 @@ import { Payment } from "../types/models";
 import { SettingsScreen } from "./settings-screen";
 import { SummaryScreen } from "./summary-screen";
 
-interface HomeScreenProps {
-  onLogout: () => void;
-}
-
-export const HomeScreen: React.FC<HomeScreenProps> = ({ onLogout }) => {
+export const HomeScreen: React.FC = () => {
   const [currentTab, setCurrentTab] = useState<"to_pay" | "to_receive">("to_pay");
   const [refreshing, setRefreshing] = useState(false);
   const [drawerVisible, setDrawerVisible] = useState(false);
@@ -39,9 +35,9 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onLogout }) => {
   const { theme } = useTheme();
   const colors = getThemeColors(theme);
   const { showToast } = useToast();
-  const { logout } = useAuth();
   const {
     loading,
+    error,
     getPayments,
     createPayment,
     updatePayment,
@@ -50,12 +46,36 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onLogout }) => {
     getPaymentsByType,
   } = usePayment();
 
-  const filteredPayments = getPaymentsByType(currentTab) || [];
+  const filteredPayments = getPaymentsByType(currentTab);
 
   useEffect(() => {
     loadPayments();
     preloadPreviousUsers();
   }, []);
+
+  // Without a navigator nothing claims the Android back press, so it would
+  // close the app from a nested screen instead of going back.
+  useEffect(() => {
+    const subscription = BackHandler.addEventListener(
+      "hardwareBackPress",
+      () => {
+        if (drawerVisible) {
+          handleCloseDrawer();
+          return true;
+        }
+        if (showSettings) {
+          setShowSettings(false);
+          return true;
+        }
+        if (showSummary) {
+          setShowSummary(false);
+          return true;
+        }
+        return false; // at the root: let the system exit the app
+      }
+    );
+    return () => subscription.remove();
+  }, [drawerVisible, showSettings, showSummary]);
 
   const preloadPreviousUsers = async () => {
     try {
@@ -64,18 +84,17 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onLogout }) => {
   };
 
   const loadPayments = async () => {
-    try {
-      await getPayments();
-    } catch (error) {
+    const result = await getPayments();
+    setRefreshing(false);
+    if (!result.ok && result.error !== "UNAUTHORIZED") {
+      // A 401 already routes to sign-in, so only surface real load failures.
       showToast("Failed to load payments", "error");
-    } finally {
-      setRefreshing(false);
     }
   };
 
   const handleAddPayment = async (formData: CreatePaymentRequest) => {
-    const payment = await createPayment(formData);
-    if (payment) {
+    const result = await createPayment(formData);
+    if (result.ok) {
       setDrawerVisible(false);
       showToast("Payment added successfully!", "success");
     } else {
@@ -86,8 +105,8 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onLogout }) => {
   const handleUpdatePayment = async (formData: CreatePaymentRequest) => {
     if (!editingPayment) return;
 
-    const payment = await updatePayment(editingPayment._id, formData);
-    if (payment) {
+    const result = await updatePayment(editingPayment._id, formData);
+    if (result.ok) {
       setDrawerVisible(false);
       setEditingPayment(null);
       showToast("Payment updated successfully!", "success");
@@ -96,88 +115,108 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onLogout }) => {
     }
   };
 
-  const handleToggleStatus = async (id: string) => {
-    const payment = await togglePaymentStatus(id);
-    if (payment === null) {
-      showToast("Payment completed and removed", "success");
-    } else if (!payment) {
-      showToast("Failed to update status", "error");
-    }
-  };
+  const handleToggleStatus = useCallback(
+    async (id: string) => {
+      const result = await togglePaymentStatus(id);
+      if (!result.ok) {
+        showToast("Failed to update status", "error");
+        return;
+      }
+      showToast(
+        result.deleted ? "Payment completed and removed" : "Status updated",
+        "success"
+      );
+    },
+    [togglePaymentStatus, showToast]
+  );
 
-  const handleEditPayment = (payment: Payment) => {
+  const handleEditPayment = useCallback((payment: Payment) => {
     setEditingPayment(payment);
     setDrawerVisible(true);
-  };
+  }, []);
 
-  const handleDeletePayment = async (id: string) => {
-    const success = await deletePayment(id);
-    if (success) {
-      showToast("Payment deleted", "success");
-    } else {
-      showToast("Failed to delete payment", "error");
-    }
-  };
+  const handleDeletePayment = useCallback(
+    async (id: string) => {
+      const result = await deletePayment(id);
+      showToast(
+        result.ok ? "Payment deleted" : "Failed to delete payment",
+        result.ok ? "success" : "error"
+      );
+    },
+    [deletePayment, showToast]
+  );
 
   const handleSubmit = (formData: CreatePaymentRequest) => {
-    if (editingPayment) {
-      handleUpdatePayment(formData);
-    } else {
-      handleAddPayment(formData);
-    }
+    // Returned so the drawer can await it and clear its submitting state.
+    return editingPayment
+      ? handleUpdatePayment(formData)
+      : handleAddPayment(formData);
   };
 
-  const handleCloseDrawer = () => {
+  const handleCloseDrawer = useCallback(() => {
     setDrawerVisible(false);
     setEditingPayment(null);
-  };
-
-  const handleLogout = async () => {
-    try {
-      await logout();
-      onLogout();
-    } catch (error) {
-      onLogout();
-    }
-  };
+  }, []);
 
   const onRefresh = () => {
     setRefreshing(true);
     loadPayments();
   };
 
-  const renderEmptyState = () => (
-    <View style={styles.emptyContainer}>
-      <View style={[styles.emptyIconContainer, { backgroundColor: colors.primaryLight }]}>
-        <WalletCards size={32} color={colors.primary} />
-      </View>
-      <Text style={[styles.emptyTitle, { color: colors.textPrimary }]}>
-        No payments yet
-      </Text>
-      <Text style={[styles.emptySubtext, { color: colors.textSecondary }]}>
-        {currentTab === "to_pay"
-          ? "Add payments you need to make"
-          : "Add payments you need to receive"}
-      </Text>
-    </View>
-  );
+  const renderEmptyState = () => {
+    // An error must not read as "you have no payments" — that looks like data loss.
+    if (error) {
+      return (
+        <View style={styles.emptyContainer}>
+          <View style={[styles.emptyIconContainer, { backgroundColor: colors.errorLight }]}>
+            <WifiOff size={32} color={colors.error} />
+          </View>
+          <Text style={[styles.emptyTitle, { color: colors.textPrimary }]}>
+            Couldn't load your payments
+          </Text>
+          <Text style={[styles.emptySubtext, { color: colors.textSecondary }]}>
+            {error === "TIMEOUT" || error === "NETWORK_ERROR"
+              ? "Check your connection and pull down to retry."
+              : "Something went wrong. Pull down to retry."}
+          </Text>
+        </View>
+      );
+    }
 
-  const renderPaymentCard = ({ item }: { item: Payment }) => {
-    if (!item || !item._id) return null;
     return (
-      <PaymentCard
-        payment={item}
-        onEdit={handleEditPayment}
-        onDelete={handleDeletePayment}
-        onToggleStatus={handleToggleStatus}
-      />
+      <View style={styles.emptyContainer}>
+        <View style={[styles.emptyIconContainer, { backgroundColor: colors.primaryLight }]}>
+          <WalletCards size={32} color={colors.primary} />
+        </View>
+        <Text style={[styles.emptyTitle, { color: colors.textPrimary }]}>
+          No payments yet
+        </Text>
+        <Text style={[styles.emptySubtext, { color: colors.textSecondary }]}>
+          {currentTab === "to_pay"
+              ? "Add a payment to remember who you need to pay."
+              : "Add a payment to remember who needs to pay you."}
+        </Text>
+      </View>
     );
   };
 
+  const renderPaymentCard = useCallback(
+    ({ item }: { item: Payment }) => {
+      if (!item || !item._id) return null;
+      return (
+        <PaymentCard
+          payment={item}
+          onEdit={handleEditPayment}
+          onDelete={handleDeletePayment}
+          onToggleStatus={handleToggleStatus}
+        />
+      );
+    },
+    [handleEditPayment, handleDeletePayment, handleToggleStatus]
+  );
+
   if (showSettings) {
-    return (
-      <SettingsScreen onLogout={handleLogout} onBack={() => setShowSettings(false)} />
-    );
+    return <SettingsScreen onBack={() => setShowSettings(false)} />;
   }
 
   if (showSummary) {
@@ -188,7 +227,6 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onLogout }) => {
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       <StatusBar
         barStyle={theme === "dark" ? "light-content" : "dark-content"}
-        backgroundColor={colors.background}
       />
 
       <View style={styles.header}>
@@ -200,6 +238,9 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onLogout }) => {
             onPress={() => setShowSummary(true)}
             style={[styles.headerButton, { backgroundColor: colors.surfaceSecondary }]}
             activeOpacity={0.7}
+            accessibilityRole="button"
+            accessibilityLabel="View summaries"
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           >
             <BarChart3 size={20} color={colors.textSecondary} />
           </TouchableOpacity>
@@ -207,6 +248,9 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onLogout }) => {
             onPress={() => setShowSettings(true)}
             style={[styles.headerButton, { backgroundColor: colors.surfaceSecondary }]}
             activeOpacity={0.7}
+            accessibilityRole="button"
+            accessibilityLabel="Open settings"
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           >
             <Settings size={20} color={colors.textSecondary} />
           </TouchableOpacity>
@@ -216,15 +260,18 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onLogout }) => {
       <View style={styles.content}>
         <Tabs currentTab={currentTab} onTabChange={setCurrentTab} />
 
-        {loading ? (
+        {loading && !refreshing ? (
           <PaymentCardSkeleton count={4} />
         ) : (
           <FlatList
-            data={Array.isArray(filteredPayments) ? filteredPayments : []}
+            data={filteredPayments}
             renderItem={renderPaymentCard}
             keyExtractor={(item) => item._id}
             contentContainerStyle={styles.listContainer}
             showsVerticalScrollIndicator={false}
+            initialNumToRender={8}
+            windowSize={11}
+            removeClippedSubviews
             refreshControl={
               <RefreshControl
                 refreshing={refreshing}
@@ -241,6 +288,8 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onLogout }) => {
         style={[styles.fab, { backgroundColor: colors.fab }, shadows.lg]}
         onPress={() => setDrawerVisible(true)}
         activeOpacity={0.8}
+        accessibilityRole="button"
+        accessibilityLabel="Add payment"
       >
         <Plus size={24} color={colors.fabIcon} />
       </TouchableOpacity>

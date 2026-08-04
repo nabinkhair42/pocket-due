@@ -2,7 +2,7 @@ import React from "react";
 import {
   GestureResponderEvent,
   Text,
-  TouchableOpacity,
+  Pressable,
   View,
   ViewStyle,
   ActivityIndicator,
@@ -116,6 +116,7 @@ export const Button = ({
     justifyContent: "center",
     gap: spacing.sm,
     opacity: isDisabled ? 0.5 : 1,
+    minHeight: 44,
     ...(fullWidth && { width: "100%" }),
     ...style,
   };
@@ -144,13 +145,13 @@ export const Button = ({
   };
 
   return (
-    <TouchableOpacity
-      style={buttonStyle}
+    <Pressable
+      style={({ pressed }) => [buttonStyle, pressed && !isDisabled && { transform: [{ scale: 0.96 }] }]}
       onPress={onPress}
       disabled={isDisabled}
-      activeOpacity={0.8}
+      accessibilityRole="button"
     >
       {renderContent()}
-    </TouchableOpacity>
+    </Pressable>
   );
 };

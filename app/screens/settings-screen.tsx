@@ -18,8 +18,9 @@ import {
   User,
   UserPen,
 } from "lucide-react-native";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
+  BackHandler,
   Linking,
   Modal,
   ScrollView,
@@ -43,12 +44,10 @@ import { ChangePasswordScreen } from "./change-password-screen";
 import { EditProfileScreen } from "./edit-profile-screen";
 
 interface SettingsScreenProps {
-  onLogout: () => void;
   onBack: () => void;
 }
 
 export const SettingsScreen: React.FC<SettingsScreenProps> = ({
-  onLogout,
   onBack,
 }) => {
   const { theme, toggleTheme } = useTheme();
@@ -67,10 +66,49 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
   const [showAboutDrawer, setShowAboutDrawer] = useState(false);
   const [showHelpDrawer, setShowHelpDrawer] = useState(false);
 
+  // Nested screens are plain state, so back has to be claimed explicitly or
+  // Android would close the app from here.
+  useEffect(() => {
+    const subscription = BackHandler.addEventListener(
+      "hardwareBackPress",
+      () => {
+        if (showDeleteAccount) {
+          setShowDeleteAccount(false);
+          return true;
+        }
+        if (showLogoutDrawer) {
+          setShowLogoutDrawer(false);
+          return true;
+        }
+        if (showAboutDrawer) {
+          setShowAboutDrawer(false);
+          return true;
+        }
+        if (showHelpDrawer) {
+          setShowHelpDrawer(false);
+          return true;
+        }
+        if (showEditProfile) {
+          setShowEditProfile(false);
+          return true;
+        }
+        if (showChangePassword) {
+          setShowChangePassword(false);
+          return true;
+        }
+        onBack();
+        return true;
+      }
+    );
+    return () => subscription.remove();
+  }, [showDeleteAccount, showLogoutDrawer, showAboutDrawer, showHelpDrawer, showEditProfile, showChangePassword, onBack]);
+
+  // The auth provider owns sign-out: clearing `user` re-renders the app to the
+  // auth screen. Previously this logged out here AND called a parent handler
+  // that logged out again, firing a second, unauthenticated request.
   const handleLogoutConfirm = async () => {
     setShowLogoutDrawer(false);
     await logout();
-    onLogout();
   };
 
   const confirmDeleteAccount = async () => {
@@ -78,7 +116,6 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
     if (success) {
       setShowDeleteAccount(false);
       setDeletePassword("");
-      onLogout();
     }
   };
 
@@ -132,7 +169,6 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       <StatusBar
         barStyle={theme === "dark" ? "light-content" : "dark-content"}
-        backgroundColor={colors.background}
       />
 
       <View style={[styles.header, { borderBottomColor: colors.border }]}>
@@ -140,6 +176,9 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
           onPress={onBack}
           style={[styles.backButton, { backgroundColor: colors.surfaceSecondary }]}
           activeOpacity={0.7}
+          accessibilityRole="button"
+          accessibilityLabel="Go back"
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
         >
           <ChevronLeft size={20} color={colors.textPrimary} />
         </TouchableOpacity>
@@ -205,17 +244,17 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
         {/* Data Section */}
         <View style={styles.section}>
           <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>
-            Data & Privacy
+            Data & privacy
           </Text>
           {renderSettingItem(
             <Calendar size={18} color={colors.textSecondary} />,
-            "Export Data",
+            "Export data",
             "Download your payment history",
             () => showToast("Data export coming soon", "info")
           )}
           {renderSettingItem(
             <Trash2 size={18} color={colors.error} />,
-            "Delete Account",
+            "Delete account",
             "Permanently delete your account",
             () => setShowDeleteAccount(true)
           )}
@@ -228,7 +267,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
           </Text>
           {renderSettingItem(
             <HelpCircle size={18} color={colors.textSecondary} />,
-            "Help & Support",
+            "Help & support",
             "Get help with the app",
             () => setShowHelpDrawer(true)
           )}
@@ -249,7 +288,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
             fullWidth
             icon={<LogOut size={18} color={colors.white} />}
           >
-            Logout
+            Sign out
           </Button>
         </View>
       </ScrollView>
@@ -265,10 +304,10 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
             <LogOut size={32} color={colors.error} />
           </View>
           <Text style={[styles.drawerTitle, { color: colors.textPrimary }]}>
-            Logout
+            Sign out
           </Text>
           <Text style={[styles.drawerMessage, { color: colors.textSecondary }]}>
-            Are you sure you want to logout from your account?
+            You’ll need to sign in again to access your payments.
           </Text>
           <Button
             onPress={handleLogoutConfirm}
@@ -277,7 +316,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
             fullWidth
             icon={<LogOut size={18} color={colors.white} />}
           >
-            Logout
+            Sign out
           </Button>
         </View>
       </Drawer>
@@ -333,10 +372,10 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
             <HelpCircle size={32} color={colors.primary} />
           </View>
           <Text style={[styles.drawerTitle, { color: colors.textPrimary }]}>
-            Help & Support
+            Help & support
           </Text>
           <Text style={[styles.drawerMessage, { color: colors.textSecondary }]}>
-            Need help? Have questions or feedback? Feel free to reach out!
+            Send an email if you need help or want to share feedback.
           </Text>
 
           <TouchableOpacity
@@ -372,7 +411,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
               <ChevronLeft size={20} color={colors.textPrimary} />
             </TouchableOpacity>
             <Text style={[styles.headerTitle, { color: colors.textPrimary }]}>
-              Delete Account
+              Delete account
             </Text>
             <View style={styles.headerSpacer} />
           </View>
@@ -380,7 +419,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
           <ScrollView style={styles.modalContent} showsVerticalScrollIndicator={false}>
             <View style={[styles.warningBox, { backgroundColor: colors.errorLight }]}>
               <Text style={[styles.warningTitle, { color: colors.error }]}>
-                Warning
+                This permanently deletes your account
               </Text>
               <Text style={[styles.warningText, { color: colors.error }]}>
                 This action cannot be undone. All your data will be permanently deleted.
@@ -389,10 +428,10 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
 
             <View style={styles.formSection}>
               <Text style={[styles.formLabel, { color: colors.textPrimary }]}>
-                Confirm Password
+                Confirm password
               </Text>
               <Text style={[styles.formHint, { color: colors.textSecondary }]}>
-                Enter your password to confirm account deletion
+                Enter your password to delete your account and payment history.
               </Text>
 
               <View style={[styles.inputContainer, { backgroundColor: colors.surface, borderColor: colors.border }]}>
@@ -635,6 +674,7 @@ const styles = StyleSheet.create({
   input: {
     flex: 1,
     ...typography.body,
+    minHeight: 24,
   },
   modalActions: {
     gap: spacing.md,

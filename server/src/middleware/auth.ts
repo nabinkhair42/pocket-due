@@ -2,8 +2,13 @@ import { Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
 import { AuthRequest, JwtPayload, ApiResponse, User } from "../types";
 import { User as UserModel } from "../models/user";
+import { config } from "../config/env";
 
-const JWT_SECRET = process.env.JWT_SECRET || "your-secret-key";
+const JWT_OPTIONS = {
+  algorithms: ["HS256"] as jwt.Algorithm[],
+  issuer: "pocket-due-api",
+  audience: "pocket-due-app",
+};
 
 export const authenticateToken = async (
   req: AuthRequest,
@@ -12,9 +17,9 @@ export const authenticateToken = async (
 ): Promise<void> => {
   try {
     const authHeader = req.headers.authorization;
-    const token = authHeader && authHeader.split(" ")[1];
+    const [scheme, token, extra] = authHeader?.split(" ") ?? [];
 
-    if (!token) {
+    if (scheme !== "Bearer" || !token || extra) {
       res.status(401).json({
         success: false,
         message: "Access token required",
@@ -23,7 +28,8 @@ export const authenticateToken = async (
       return;
     }
 
-    const decoded = jwt.verify(token, JWT_SECRET) as JwtPayload;
+    const decoded = jwt.verify(token, config.JWT_SECRET, JWT_OPTIONS) as JwtPayload;
+    if (!decoded.userId || !decoded.email) throw new Error("Invalid token payload");
     const user = await UserModel.findById(decoded.userId).select("-password");
 
     if (!user) {
@@ -47,5 +53,10 @@ export const authenticateToken = async (
 };
 
 export const generateToken = (userId: string, email: string): string => {
-  return jwt.sign({ userId, email }, JWT_SECRET, { expiresIn: "7d" });
+  return jwt.sign({ userId, email }, config.JWT_SECRET, {
+    algorithm: "HS256",
+    issuer: JWT_OPTIONS.issuer,
+    audience: JWT_OPTIONS.audience,
+    expiresIn: "7d",
+  });
 };

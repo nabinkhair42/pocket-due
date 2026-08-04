@@ -1,113 +1,12 @@
-import { useState, useCallback, useEffect } from "react";
-import { apiService } from "../lib/api";
-import { User } from "../types/models";
-import {
-  ApiResponse,
-  AuthResponse,
-  RegisterRequest,
-  LoginRequest,
-} from "../types/api";
-
-export const useAuth = () => {
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(false);
-
-  const getCurrentUser = useCallback(async (): Promise<User | null> => {
-    try {
-      const result = await apiService.getCurrentUser();
-      if (result.success && result.data?.user) {
-        setUser(result.data.user);
-        return result.data.user;
-      }
-      return null;
-    } catch (error) {
-      return null;
-    }
-  }, []);
-
-  // Load current user on mount
-  useEffect(() => {
-    let isMounted = true;
-
-    const loadCurrentUser = async () => {
-      try {
-        const result = await apiService.getCurrentUser();
-        if (isMounted && result.success && result.data?.user) {
-          setUser(result.data.user);
-        }
-      } catch (error) {
-        // Silently fail - user will be redirected to auth
-      }
-    };
-
-    loadCurrentUser();
-
-    return () => {
-      isMounted = false;
-    };
-  }, []);
-
-  const register = useCallback(
-    async (data: RegisterRequest): Promise<ApiResponse<AuthResponse>> => {
-      setLoading(true);
-      try {
-        const result = await apiService.register(data);
-        if (result.success && result.data?.user) {
-          setUser(result.data.user);
-        }
-        return result;
-      } catch (error) {
-        return {
-          success: false,
-          error: "Registration failed",
-        };
-      } finally {
-        setLoading(false);
-      }
-    },
-    []
-  );
-
-  const login = useCallback(
-    async (data: LoginRequest): Promise<ApiResponse<AuthResponse>> => {
-      setLoading(true);
-      try {
-        const result = await apiService.login(data);
-        if (result.success && result.data?.user) {
-          setUser(result.data.user);
-        }
-        return result;
-      } catch (error) {
-        return {
-          success: false,
-          error: "Login failed",
-        };
-      } finally {
-        setLoading(false);
-      }
-    },
-    []
-  );
-
-  const logout = useCallback(async (): Promise<void> => {
-    try {
-      await apiService.logout();
-      setUser(null);
-    } catch (error) {
-    }
-  }, []);
-
-  const updateUser = useCallback((updatedUser: User): void => {
-    setUser(updatedUser);
-  }, []);
-
-  return {
-    user,
-    loading,
-    register,
-    login,
-    logout,
-    getCurrentUser,
-    updateUser,
-  };
-};
+/**
+ * Auth state lives in a single provider (contexts/auth-context.tsx) so the whole
+ * app shares one `user` and one /auth/me bootstrap.
+ *
+ * This file previously declared `useState` inside the hook, which meant every
+ * call site got its own private user state and fired its own /auth/me on mount —
+ * five disjoint answers to "is this user signed in", none authoritative.
+ *
+ * Re-exported here so existing `../hooks/use-auth` imports keep working.
+ */
+export { useAuth, AuthProvider } from "../contexts/auth-context";
+export type { AuthStatus } from "../contexts/auth-context";

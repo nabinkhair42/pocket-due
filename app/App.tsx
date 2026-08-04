@@ -1,52 +1,26 @@
-import { useState, useEffect } from "react";
 import { SafeAreaProvider } from "react-native-safe-area-context";
-import { useTheme, ThemeProvider } from "./contexts/ThemeContext";
+import { ErrorBoundary } from "./components/error-boundary";
+import { AuthProvider, useAuth } from "./contexts/auth-context";
+import { ThemeProvider } from "./contexts/ThemeContext";
 import { ToastProvider } from "./contexts/toast-context";
-import { apiService } from "./lib/api";
 import { AuthScreen } from "./screens/auth-screen";
 import { HomeScreen } from "./screens/home-screen";
-import { StatusBar } from "react-native";
 
 function AppContent() {
-  const [user, setUser] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
-  const { theme } = useTheme();
+  // Single source of truth. `status` distinguishes "server said no" from
+  // "we couldn't reach the server", which decides whether to sign the user out.
+  const { user, status, getCurrentUser } = useAuth();
 
-  useEffect(() => {
-    checkAuthStatus();
-  }, []);
-
-  const checkAuthStatus = async () => {
-    try {
-      const result = await apiService.getCurrentUser();
-      if (result.success && result.data?.user) {
-        setUser(result.data.user);
-      }
-    } catch (error) {
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleAuthSuccess = () => {
-    checkAuthStatus();
-  };
-
-  const handleLogout = () => {
-    setUser(null);
-  };
-
-  if (loading) {
+  if (status === "loading") {
     return null;
   }
 
   return (
     <SafeAreaProvider>
-      <StatusBar style={theme === "dark" ? "light" : "dark"} />
       {user ? (
-        <HomeScreen onLogout={handleLogout} />
+        <HomeScreen />
       ) : (
-        <AuthScreen onAuthSuccess={handleAuthSuccess} />
+        <AuthScreen onAuthSuccess={getCurrentUser} />
       )}
     </SafeAreaProvider>
   );
@@ -54,10 +28,14 @@ function AppContent() {
 
 export default function App() {
   return (
-    <ThemeProvider>
-      <ToastProvider>
-        <AppContent />
-      </ToastProvider>
-    </ThemeProvider>
+    <ErrorBoundary>
+      <ThemeProvider>
+        <AuthProvider>
+          <ToastProvider>
+            <AppContent />
+          </ToastProvider>
+        </AuthProvider>
+      </ThemeProvider>
+    </ErrorBoundary>
   );
 }

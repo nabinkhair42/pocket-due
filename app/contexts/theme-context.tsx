@@ -1,71 +1,14 @@
-import React, { createContext, useContext, useState, useEffect } from "react";
-import { useColorScheme } from "react-native";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-
-export type Theme = "light" | "dark";
-
-interface ThemeContextType {
-  theme: Theme;
-  toggleTheme: () => void;
-  setTheme: (theme: Theme) => void;
-}
-
-const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
-
-export const useTheme = () => {
-  const context = useContext(ThemeContext);
-  if (!context) {
-    throw new Error("useTheme must be used within a ThemeProvider");
-  }
-  return context;
-};
-
-interface ThemeProviderProps {
-  children: React.ReactNode;
-}
-
-export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
-  const systemColorScheme = useColorScheme();
-  const [theme, setThemeState] = useState<Theme>(systemColorScheme === "dark" ? "dark" : "light");
-  const [isLoaded, setIsLoaded] = useState(false);
-
-  useEffect(() => {
-    loadTheme();
-  }, []);
-
-  const loadTheme = async () => {
-    try {
-      const savedTheme = await AsyncStorage.getItem("theme");
-      if (savedTheme === "dark" || savedTheme === "light") {
-        setThemeState(savedTheme);
-      }
-      // If no saved theme, keep the system default (already set in useState)
-    } catch (error) {
-    } finally {
-      setIsLoaded(true);
-    }
-  };
-
-  const setTheme = async (newTheme: Theme) => {
-    try {
-      await AsyncStorage.setItem("theme", newTheme);
-      setThemeState(newTheme);
-    } catch (error) {
-    }
-  };
-
-  const toggleTheme = () => {
-    const newTheme = theme === "light" ? "dark" : "light";
-    setTheme(newTheme);
-  };
-
-  if (!isLoaded) {
-    return null; // Or a loading screen
-  }
-
-  return (
-    <ThemeContext.Provider value={{ theme, toggleTheme, setTheme }}>
-      {children}
-    </ThemeContext.Provider>
-  );
-};
+/**
+ * DEPRECATED — this file used to be a byte-identical copy of ThemeContext.tsx.
+ *
+ * Two copies meant two separate `createContext` calls: any component importing
+ * this path would read from a provider that was never mounted and throw
+ * "useTheme must be used within a ThemeProvider". On a case-insensitive
+ * filesystem (macOS) `./theme-context` and `./ThemeContext` can also resolve to
+ * each other, so the bug would appear only on Linux/CI/Android builds.
+ *
+ * Now a pure re-export, so both paths share one context. Safe to delete once no
+ * imports remain: `grep -rn "contexts/theme-context" app/`
+ */
+export { ThemeProvider, useTheme } from "./ThemeContext";
+export type { Theme } from "./ThemeContext";
