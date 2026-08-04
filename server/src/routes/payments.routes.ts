@@ -92,12 +92,13 @@ router.post(
   "/",
   validateRequest(paymentValidationRules, { rejectUnknown: true }),
   handleAsync(async (req: Request, res: Response) => {
-    const { type, personName, description, amount, dueDate } =
+    const { clientRequestId, type, personName, description, amount, dueDate } =
       req.body as CreatePaymentRequest;
     const userId = (req as unknown as { user: { _id: string } }).user._id;
 
     const payment = await paymentService.createPayment(userId, {
       type,
+      clientRequestId,
       personName,
       description,
       amount,
@@ -166,7 +167,7 @@ router.get(
   "/summaries",
   async (req: Request, res: Response) => {
     try {
-      const userId = String((req.user as { _id: unknown })._id);
+      const userId = String(((req as Request & { user: { _id: unknown } }).user)._id);
 
       const payments = await paymentService.getPayments(userId);
 

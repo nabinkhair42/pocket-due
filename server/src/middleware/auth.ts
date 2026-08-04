@@ -1,62 +1,22 @@
-import { Response, NextFunction } from "express";
-import jwt from "jsonwebtoken";
-import { AuthRequest, JwtPayload, ApiResponse, User } from "../types";
-import { User as UserModel } from "../models/user";
-import { config } from "../config/env";
+import { NextFunction, Request, Response } from "express";
+import { fromNodeHeaders } from "better-auth/node";
+import { auth } from "../config/auth";
 
-const JWT_OPTIONS = {
-  algorithms: ["HS256"] as jwt.Algorithm[],
-  issuer: "pocket-due-api",
-  audience: "pocket-due-app",
-};
-
-export const authenticateToken = async (
-  req: AuthRequest,
-  res: Response<ApiResponse>,
-  next: NextFunction
-): Promise<void> => {
+export const authenticateToken = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const authHeader = req.headers.authorization;
-    const [scheme, token, extra] = authHeader?.split(" ") ?? [];
-
-    if (scheme !== "Bearer" || !token || extra) {
-      res.status(401).json({
-        success: false,
-        message: "Access token required",
-        error: "No token provided",
-      });
+    const session = await auth.api.getSession({ headers: fromNodeHeaders(req.headers) });
+    if (!session) {
+      res.status(401).json({ success: false, message: "Authentication required" });
       return;
     }
-
-    const decoded = jwt.verify(token, config.JWT_SECRET, JWT_OPTIONS) as JwtPayload;
-    if (!decoded.userId || !decoded.email) throw new Error("Invalid token payload");
-    const user = await UserModel.findById(decoded.userId).select("-password");
-
-    if (!user) {
-      res.status(401).json({
-        success: false,
-        message: "Invalid token",
-        error: "User not found",
-      });
-      return;
-    }
-
-    req.user = user as unknown as User;
+    (req as Request & { user: Record<string, string> }).user = {
+      _id: session.user.id,
+      id: session.user.id,
+      email: session.user.email,
+      name: session.user.name,
+    };
     next();
   } catch (error) {
-    res.status(401).json({
-      success: false,
-      message: "Invalid token",
-      error: "Token verification failed",
-    });
+    next(error);
   }
-};
-
-export const generateToken = (userId: string, email: string): string => {
-  return jwt.sign({ userId, email }, config.JWT_SECRET, {
-    algorithm: "HS256",
-    issuer: JWT_OPTIONS.issuer,
-    audience: JWT_OPTIONS.audience,
-    expiresIn: "7d",
-  });
 };

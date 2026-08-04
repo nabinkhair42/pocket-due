@@ -1,345 +1,105 @@
-import { ChevronLeft, ChevronRight, Lock, Mail, User } from "lucide-react-native";
-import React, { useEffect, useState } from "react";
-import {
-  KeyboardAvoidingView,
-  BackHandler,
-  Platform,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import React from "react";
+import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Button } from "../components/button";
-import { AppLogo } from "../components/icons";
 import { useTheme } from "../contexts/ThemeContext";
 import { useToast } from "../contexts/toast-context";
 import { useAuth } from "../hooks/use-auth";
-import { getThemeColors, typography } from "../lib/theme";
-import { LoginRequest, RegisterRequest } from "../types/api";
+import { AppLogo, GithubIcon, GoogleIcon } from "../icons";
+import { getThemeColors, radius, shadows, spacing, typography } from "../lib/theme";
 
 interface AuthScreenProps {
   onAuthSuccess: () => void;
 }
 
+type SocialProvider = "google" | "github";
+
 export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthSuccess }) => {
-  const [showEmailForm, setShowEmailForm] = useState(false);
-  const [showLoginForm, setShowLoginForm] = useState(false);
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [name, setName] = useState("");
   const { theme } = useTheme();
   const colors = getThemeColors(theme);
   const { showToast } = useToast();
-  const { register, login, loading } = useAuth();
+  const { signInWithProvider, loading } = useAuth();
 
-  useEffect(() => {
-    const subscription = BackHandler.addEventListener("hardwareBackPress", () => {
-      if (!showEmailForm) return false;
-      dismissForm();
-      return true;
-    });
-
-    return () => subscription.remove();
-  }, [showEmailForm]);
-
-  // The form is a branch of a component that never unmounts, so credentials
-  // would otherwise sit in state after the user backs out.
-  const dismissForm = () => {
-    setShowEmailForm(false);
-    setEmail("");
-    setPassword("");
-    setName("");
-  };
-
-  const handleRegister = async () => {
-    if (!email.trim() || !password.trim() || !name.trim()) {
-      showToast("Enter your name, email, and password to continue.", "error");
+  const handleSignIn = async (provider: SocialProvider) => {
+    const result = await signInWithProvider(provider);
+    if (result.success) {
+      onAuthSuccess();
       return;
     }
 
-    const data: RegisterRequest = {
-      email: email.trim(),
-      password: password.trim(),
-      name: name.trim(),
-    };
-
-    const result = await register(data);
-
-    if (result.success) {
-      showToast("Account created", "success");
-      onAuthSuccess();
-    } else {
-      showToast(result.error || "Unable to create your account. Try again.", "error");
-    }
+    showToast(
+      result.error || `Unable to sign in with ${provider === "google" ? "Google" : "GitHub"}. Try again.`,
+      "error",
+    );
   };
 
-  const handleLogin = async () => {
-    if (!email.trim() || !password.trim()) {
-      showToast("Enter your email and password to continue.", "error");
-      return;
-    }
-
-    const data: LoginRequest = {
-      email: email.trim(),
-      password: password.trim(),
-    };
-
-    const result = await login(data);
-
-    if (result.success) {
-      showToast("Signed in", "success");
-      onAuthSuccess();
-    } else {
-      showToast(result.error || "Unable to sign in. Check your details and try again.", "error");
-    }
-  };
-
-  const renderWelcomeScreen = () => (
+  return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-      <View style={styles.header}>
-        <View style={styles.logoContainer}>
-          <AppLogo size={80} style={styles.logo} />
+      <View style={styles.hero}>
+        <View style={[styles.logoSurface, { backgroundColor: colors.surface }, shadows.md]}>
+          <AppLogo size={72} style={styles.logo} />
         </View>
-        <Text style={[styles.title, { color: colors.textPrimary }]}>
-          PocketDue
-        </Text>
-        <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
-          Keep track of what you owe and what others owe you.
-        </Text>
+        <Text style={[styles.title, { color: colors.textPrimary }]}>PocketDue</Text>
+        <Text style={[styles.subtitle, { color: colors.textSecondary }]}>Keep track of what you owe and what others owe you.</Text>
       </View>
 
-      <View style={styles.content}>
-        <View>
-          <Button
-            icon={<ChevronRight size={20} color={colors.white} />}
-            variant="primary"
-            onPress={() => setShowEmailForm(true)}
-            size="lg"
-            fullWidth
-          >
-            Get started
-          </Button>
-        </View>
-      </View>
-    </SafeAreaView>
-  );
+      <View style={styles.actions}>
+        <Text style={[styles.actionTitle, { color: colors.textPrimary }]}>Sign in to continue</Text>
+        <Text style={[styles.actionHint, { color: colors.textSecondary }]}>Choose an account you already trust. No new password required.</Text>
 
-  const renderEmailForm = () => (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-      <View style={styles.formHeader}>
-        <TouchableOpacity
-          onPress={dismissForm}
-          style={styles.backButton}
+        <Pressable
           accessibilityRole="button"
-          accessibilityLabel="Go back"
-          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-        >
-          <ChevronLeft size={24} color={colors.textPrimary} />
-        </TouchableOpacity>
-        <Text style={[styles.formTitle, { color: colors.textPrimary }]}>
-          {showLoginForm ? "Welcome back" : "Create account"}
-        </Text>
-      </View>
-
-      <KeyboardAvoidingView
-        style={styles.flex}
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
-      >
-        <ScrollView
-          style={styles.flex}
-          contentContainerStyle={styles.formContainer}
-          keyboardShouldPersistTaps="handled"
-          showsVerticalScrollIndicator={false}
-        >
-        {!showLoginForm && (
-          <View style={styles.inputGroup}>
-            <Text style={[styles.label, { color: colors.textPrimary }]}>
-              Full name
-            </Text>
-            <View
-              style={[
-                styles.inputContainer,
-                { backgroundColor: colors.surface },
-              ]}
-            >
-              <User size={20} color={colors.textSecondary} />
-              <TextInput
-                style={[styles.input, { color: colors.textPrimary }]}
-                placeholder="Enter your full name"
-                placeholderTextColor={colors.textTertiary}
-                value={name}
-                onChangeText={setName}
-                autoCapitalize="words"
-              />
-            </View>
-          </View>
-        )}
-
-        <View style={styles.inputGroup}>
-          <Text style={[styles.label, { color: colors.textPrimary }]}>
-              Email address
-          </Text>
-          <View
-            style={[styles.inputContainer, { backgroundColor: colors.surface }]}
-          >
-            <Mail size={20} color={colors.textSecondary} />
-            <TextInput
-              style={[styles.input, { color: colors.textPrimary }]}
-              placeholder="Enter your email"
-              placeholderTextColor={colors.textTertiary}
-              value={email}
-              onChangeText={setEmail}
-              keyboardType="email-address"
-              autoCapitalize="none"
-            />
-          </View>
-        </View>
-
-        <View style={styles.inputGroup}>
-          <Text style={[styles.label, { color: colors.textPrimary }]}>
-            Password
-          </Text>
-          <View
-            style={[styles.inputContainer, { backgroundColor: colors.surface }]}
-          >
-            <Lock size={20} color={colors.textSecondary} />
-            <TextInput
-              style={[styles.input, { color: colors.textPrimary }]}
-              placeholder="Enter your password"
-              placeholderTextColor={colors.textTertiary}
-              value={password}
-              onChangeText={setPassword}
-              secureTextEntry
-            />
-          </View>
-        </View>
-
-        <Button
-          onPress={showLoginForm ? handleLogin : handleRegister}
-          variant="primary"
-          size="lg"
-          style={styles.submitButton}
-          fullWidth
-          loading={loading}
+          accessibilityLabel="Continue with Google"
           disabled={loading}
+          onPress={() => handleSignIn("google")}
+          style={({ pressed }) => [
+            styles.socialButton,
+            { backgroundColor: colors.surface, borderColor: colors.border },
+            pressed && !loading && styles.pressed,
+            loading && styles.disabled,
+          ]}
         >
-          {showLoginForm ? "Sign in" : "Create account"}
-        </Button>
+          <GoogleIcon size={21} />
+          <Text style={[styles.socialButtonText, { color: colors.textPrimary }]}>Continue with Google</Text>
+          {loading ? <ActivityIndicator size="small" color={colors.textSecondary} /> : <View style={styles.trailingSpace} />}
+        </Pressable>
 
-        <TouchableOpacity
-          onPress={() => setShowLoginForm(!showLoginForm)}
-          style={styles.switchButton}
+        <Pressable
           accessibilityRole="button"
+          accessibilityLabel="Continue with GitHub"
+          disabled={loading}
+          onPress={() => handleSignIn("github")}
+          style={({ pressed }) => [
+            styles.socialButton,
+            { backgroundColor: colors.textPrimary, borderColor: colors.textPrimary },
+            pressed && !loading && styles.pressed,
+            loading && styles.disabled,
+          ]}
         >
-          <Text style={[styles.switchText, { color: colors.primary }]}>
-            {showLoginForm
-              ? "New to PocketDue? Create an account"
-              : "Already have an account? Sign in"}
-          </Text>
-        </TouchableOpacity>
-        </ScrollView>
-      </KeyboardAvoidingView>
+          <GithubIcon size={21} color={colors.background} />
+          <Text style={[styles.socialButtonText, { color: colors.background }]}>Continue with GitHub</Text>
+          <View style={styles.trailingSpace} />
+        </Pressable>
+
+        <Text style={[styles.privacyCopy, { color: colors.textTertiary }]}>By continuing, you agree to PocketDue’s terms and privacy policy.</Text>
+      </View>
     </SafeAreaView>
   );
-
-  return showEmailForm ? renderEmailForm() : renderWelcomeScreen();
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  flex: {
-    flex: 1,
-  },
-  header: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    paddingHorizontal: 40,
-  },
-  logoContainer: {
-    marginBottom: 24,
-  },
-  logo: {
-    alignSelf: "center",
-  },
-  title: {
-    ...typography.h1,
-    textAlign: "center",
-    marginBottom: 8,
-  },
-  subtitle: {
-    ...typography.body,
-    textAlign: "center",
-    maxWidth: 320,
-  },
-  content: {
-    paddingHorizontal: 24,
-    paddingBottom: 40,
-  },
-  primaryButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: 16,
-    paddingHorizontal: 24,
-    borderRadius: 8,
-    gap: 12,
-  },
-  buttonText: {
-    ...typography.button,
-  },
-  formHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 10,
-    paddingTop: 8,
-    paddingBottom: 32,
-  },
-  backButton: {
-    padding: 8,
-    marginRight: 6,
-  },
-  formTitle: {
-    ...typography.h2,
-  },
-  formContainer: {
-    paddingHorizontal: 24,
-    paddingBottom: 40,
-  },
-  inputGroup: {
-    marginBottom: 24,
-  },
-  label: {
-    fontSize: 16,
-    fontWeight: "600",
-    marginBottom: 8,
-  },
-  inputContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 16,
-    gap: 12,
-  },
-  input: {
-    flex: 1,
-    ...typography.body,
-  },
-  submitButton: {
-    marginTop: 32,
-  },
-  switchButton: {
-    alignItems: "center",
-    marginTop: 24,
-  },
-  switchText: {
-    fontSize: 14,
-    fontWeight: "500",
-  },
+  container: { flex: 1, paddingHorizontal: spacing.xl },
+  hero: { flex: 1, justifyContent: "center", alignItems: "center", paddingTop: spacing.xxxl },
+  logoSurface: { width: 104, height: 104, borderRadius: radius.xl, alignItems: "center", justifyContent: "center", marginBottom: spacing.xxl },
+  logo: { alignSelf: "center" },
+  title: { ...typography.h1, textAlign: "center", marginBottom: spacing.sm },
+  subtitle: { ...typography.body, textAlign: "center", maxWidth: 330 },
+  actions: { paddingBottom: spacing.xxxl, gap: spacing.md },
+  actionTitle: { ...typography.h3, textAlign: "center" },
+  actionHint: { ...typography.caption, textAlign: "center", marginBottom: spacing.sm, paddingHorizontal: spacing.lg },
+  socialButton: { minHeight: 56, borderRadius: radius.lg, borderWidth: 1, paddingHorizontal: spacing.lg, flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: spacing.md },
+  socialButtonText: { ...typography.button, flex: 1, textAlign: "center" },
+  trailingSpace: { width: 21, height: 21 },
+  pressed: { transform: [{ scale: 0.96 }] },
+  disabled: { opacity: 0.55 },
+  privacyCopy: { ...typography.small, textAlign: "center", marginTop: spacing.xs, paddingHorizontal: spacing.md },
 });

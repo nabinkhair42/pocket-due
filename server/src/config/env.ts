@@ -7,23 +7,38 @@ interface EnvironmentConfig {
   NODE_ENV: string;
   PORT: number;
   MONGODB_URI: string;
-  JWT_SECRET: string;
+  BETTER_AUTH_SECRET: string;
+  BETTER_AUTH_URL: string;
+  GOOGLE_CLIENT_ID: string;
+  GOOGLE_CLIENT_SECRET: string;
+  GITHUB_CLIENT_ID: string;
+  GITHUB_CLIENT_SECRET: string;
   FRONTEND_URL: string;
   MOBILE_APP_URL: string;
   ALLOWED_ORIGINS: string[];
 }
 
 const getEnvironmentConfig = (): EnvironmentConfig => {
-  const jwtSecret = process.env.JWT_SECRET?.trim();
-  if (!jwtSecret || jwtSecret.length < 32 || jwtSecret === "your-secret-key") {
-    throw new Error("JWT_SECRET must be set to a strong secret of at least 32 characters");
+  const authSecret = process.env.BETTER_AUTH_SECRET?.trim();
+  if (!authSecret || authSecret.length < 32) {
+    throw new Error("BETTER_AUTH_SECRET must be at least 32 characters");
   }
+  const required = (name: string) => {
+    const value = process.env[name]?.trim();
+    if (!value) throw new Error(`${name} must be set`);
+    return value;
+  };
   return {
     NODE_ENV: process.env.NODE_ENV || "development",
     PORT: parseInt(process.env.PORT || "3000", 10),
     MONGODB_URI:
       process.env.MONGODB_URI || "mongodb://localhost:27017/pocketDue",
-    JWT_SECRET: jwtSecret,
+    BETTER_AUTH_SECRET: authSecret,
+    BETTER_AUTH_URL: process.env.BETTER_AUTH_URL || "http://localhost:3000",
+    GOOGLE_CLIENT_ID: required("GOOGLE_CLIENT_ID"),
+    GOOGLE_CLIENT_SECRET: required("GOOGLE_CLIENT_SECRET"),
+    GITHUB_CLIENT_ID: required("GITHUB_CLIENT_ID"),
+    GITHUB_CLIENT_SECRET: required("GITHUB_CLIENT_SECRET"),
     FRONTEND_URL: process.env.FRONTEND_URL || "http://localhost:3000",
     MOBILE_APP_URL: process.env.MOBILE_APP_URL || "pocketdue://",
     ALLOWED_ORIGINS: process.env.ALLOWED_ORIGINS?.split(",") || [

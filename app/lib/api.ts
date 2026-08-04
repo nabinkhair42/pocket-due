@@ -1,19 +1,15 @@
 // API service for PocketDue mobile app
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import { API_BASE_URL, authClient } from "./auth-client";
 import {
   ApiResponse,
-  AuthResponse,
   CreatePaymentRequest,
-  LoginRequest,
   PaymentResponse,
   PaymentsResponse,
   PaymentSummary,
-  RegisterRequest,
   UpdatePaymentRequest,
   UserResponse,
 } from "../types/api";
 
-const API_BASE_URL = "http://localhost:3000";
 const REQUEST_TIMEOUT_MS = 30000;
 
 type AuthFailureListener = () => void;
@@ -41,34 +37,6 @@ class ApiService {
     });
   }
 
-  async hasToken(): Promise<boolean> {
-    return (await this.getToken()) !== null;
-  }
-
-  private async getToken(): Promise<string | null> {
-    try {
-      const token = await AsyncStorage.getItem("authToken");
-      return token;
-    } catch (error) {
-      return null;
-    }
-  }
-
-  private async setToken(token: string): Promise<boolean> {
-    try {
-      await AsyncStorage.setItem("authToken", token);
-      return true;
-    } catch (error) {
-      return false;
-    }
-  }
-
-  private async removeToken(): Promise<void> {
-    try {
-      await AsyncStorage.removeItem("authToken");
-    } catch (error) {}
-  }
-
   private async makeRequest<T>(
     endpoint: string,
     options: RequestInit = {},
@@ -77,15 +45,15 @@ class ApiService {
     const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
 
     try {
-      const token = await this.getToken();
+      const cookie = (authClient as any).getCookie?.() as string | undefined;
 
       const headers: Record<string, string> = {
         "Content-Type": "application/json",
         ...(options.headers as Record<string, string>),
       };
 
-      if (token) {
-        headers.Authorization = `Bearer ${token}`;
+      if (cookie) {
+        headers.Cookie = cookie;
       }
 
       const response = await fetch(`${API_BASE_URL}${endpoint}`, {
@@ -113,7 +81,6 @@ class ApiService {
       // Expired or rejected token: clear it and notify the auth layer so the
       // user is actually sent back to sign-in instead of seeing empty data.
       if (response.status === 401) {
-        await this.removeToken();
         this.emitAuthFailure();
         return {
           success: false,
@@ -157,99 +124,29 @@ class ApiService {
     }
   }
 
-  // Auth methods
-  async register(data: RegisterRequest): Promise<ApiResponse<AuthResponse>> {
-    const response = await this.makeRequest<AuthResponse>("/auth/register", {
-      method: "POST",
-      body: JSON.stringify(data),
-    });
-
-    if (response.success && response.data?.token) {
-      const stored = await this.setToken(response.data.token);
-      if (!stored) {
-        return {
-          success: false,
-          message: "Couldn't save your session. Please try again.",
-          error: "STORAGE_ERROR",
-        };
-      }
-    }
-
-    return response;
-  }
-
-  async login(data: LoginRequest): Promise<ApiResponse<AuthResponse>> {
-    const response = await this.makeRequest<AuthResponse>("/auth/login", {
-      method: "POST",
-      body: JSON.stringify(data),
-    });
-
-    if (response.success && response.data?.token) {
-      const stored = await this.setToken(response.data.token);
-      if (!stored) {
-        return {
-          success: false,
-          message: "Couldn't save your session. Please try again.",
-          error: "STORAGE_ERROR",
-        };
-      }
-    }
-
-    return response;
-  }
-
-  async logout(): Promise<ApiResponse> {
-    // Send the request while still authenticated, then drop the token
-    // regardless of the outcome.
-    const response = await this.makeRequest("/auth/logout", {
-      method: "POST",
-    });
-    await this.removeToken();
-    return response;
-  }
-
-  async getCurrentUser(): Promise<ApiResponse<UserResponse>> {
-    return this.makeRequest<UserResponse>("/auth/me", {
-      method: "GET",
-    });
-  }
-
   async updateProfile(data: {
     name?: string;
     email?: string;
   }): Promise<ApiResponse<UserResponse>> {
-    return this.makeRequest<UserResponse>("/auth/profile", {
-      method: "PUT",
-      body: JSON.stringify(data),
-    });
+    const result = await (authClient as any).updateUser(data);
+    if (result?.data?.user) return { success: true, data: { user: result.data.user } } as any;
+    return { success: false, message: result?.error?.message || "Failed to update profile", error: "REQUEST_FAILED" };
   }
 
-  async changePassword(data: {
-    currentPassword: string;
-    newPassword: string;
-  }): Promise<ApiResponse> {
-    return this.makeRequest("/auth/password", {
-      method: "PUT",
-      body: JSON.stringify(data),
-    });
-  }
-
-  async deleteAccount(data: { password: string }): Promise<ApiResponse> {
-    return this.makeRequest("/auth/account", {
-      method: "DELETE",
-      body: JSON.stringify(data),
-    });
+  async deleteAccount(): Promise<ApiResponse> {
+    const result = await (authClient as any).deleteUser();
+    return result?.error ? { success: false, message: result.error.message, error: "REQUEST_FAILED" } : { success: true };
   }
 
   // Payment methods
   async getPayments(): Promise<ApiResponse<PaymentsResponse>> {
-    return this.makeRequest<PaymentsResponse>("/payments");
+    return this.makeRequest<PaymentsResponse>("/api/payments");
   }
 
   async createPayment(
     data: CreatePaymentRequest,
   ): Promise<ApiResponse<PaymentResponse>> {
-    return this.makeRequest<PaymentResponse>("/payments", {
+    return this.makeRequest<PaymentResponse>("/api/payments", {
       method: "POST",
       body: JSON.stringify(data),
     });
@@ -259,27 +156,27 @@ class ApiService {
     id: string,
     data: UpdatePaymentRequest,
   ): Promise<ApiResponse<PaymentResponse>> {
-    return this.makeRequest<PaymentResponse>(`/payments/${id}`, {
+    return this.makeRequest<PaymentResponse>(`/api/payments/${id}`, {
       method: "PUT",
       body: JSON.stringify(data),
     });
   }
 
   async togglePaymentStatus(id: string): Promise<ApiResponse<PaymentResponse>> {
-    return this.makeRequest<PaymentResponse>(`/payments/${id}/toggle`, {
+    return this.makeRequest<PaymentResponse>(`/api/payments/${id}/toggle`, {
       method: "PATCH",
     });
   }
 
   async deletePayment(id: string): Promise<ApiResponse> {
-    return this.makeRequest(`/payments/${id}`, {
+    return this.makeRequest(`/api/payments/${id}`, {
       method: "DELETE",
     });
   }
 
   async getPreviousUsers(): Promise<ApiResponse<{ previousUsers: string[] }>> {
     return this.makeRequest<{ previousUsers: string[] }>(
-      "/payments/previous-users",
+      "/api/payments/previous-users",
     );
   }
 
@@ -287,7 +184,7 @@ class ApiService {
     ApiResponse<{ summaries: PaymentSummary[] }>
   > {
     return this.makeRequest<{ summaries: PaymentSummary[] }>(
-      "/payments/summaries",
+      "/api/payments/summaries",
     );
   }
 }

@@ -1,6 +1,7 @@
 import mongoose, { Document, Schema } from "mongoose";
 
 export interface IPayment extends Document {
+  clientRequestId?: string;
   userId: mongoose.Types.ObjectId;
   type: "to_pay" | "to_receive";
   personName: string;
@@ -14,6 +15,11 @@ export interface IPayment extends Document {
 
 const paymentSchema = new Schema<IPayment>(
   {
+    clientRequestId: {
+      type: String,
+      trim: true,
+      maxlength: 100,
+    },
     userId: {
       type: Schema.Types.ObjectId,
       ref: "User",
@@ -60,5 +66,9 @@ const paymentSchema = new Schema<IPayment>(
 paymentSchema.index({ userId: 1, createdAt: -1 });
 paymentSchema.index({ userId: 1, type: 1, createdAt: -1 });
 paymentSchema.index({ userId: 1, personName: 1 });
+paymentSchema.index(
+  { userId: 1, clientRequestId: 1 },
+  { unique: true, sparse: true }
+);
 
 export const Payment = mongoose.model<IPayment>("Payment", paymentSchema);

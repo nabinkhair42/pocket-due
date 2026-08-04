@@ -1,32 +1,12 @@
-import { Image, StyleProp, View, ViewStyle } from "react-native";
-
-
-interface IconProps {
-  size: number;
-  style?: StyleProp<ViewStyle>;
-}
-
-const GoogleIcon = ({ size, style }: IconProps) => {
-  return (
-    <View style={style}>
-      <Image
-        source={require("../assets/icons/google.png")}
-        style={{ width: size, height: size }}
-      />
-    </View>
-  );
-};
-
-export default GoogleIcon;
-
-export const AppLogo = ({ size, style }: IconProps) => {
-  return (
-    <View style={style}>
-      <Image
-        source={require("../assets/icon.png")}
-        style={{ width: size, height: size }}
-      />
-    </View>
-  );
-};
-
+/**
+ * DEPRECATED — icons now live in `app/icons/` as real SVG components.
+ *
+ * The previous implementations rendered PNGs through <Image>: `AppLogo` used
+ * assets/icon.png (the launcher icon, so it carried launcher padding and
+ * blurred when scaled up), and the Google mark was a raster that couldn't
+ * adapt to theme or resolution.
+ *
+ * Re-exported so any stale import keeps working. Safe to delete once
+ * `grep -rn "components/icons" app/` comes back empty.
+ */
+export { AppLogo, GithubIcon, GoogleIcon } from "../icons";

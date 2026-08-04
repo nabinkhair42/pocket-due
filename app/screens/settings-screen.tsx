@@ -1,18 +1,13 @@
 import {
-  Calendar,
   ChevronLeft,
   ChevronRight,
-  Eye,
-  EyeOff,
   ExternalLink,
   Globe,
   HelpCircle,
   Info,
-  Lock,
   LogOut,
   Mail,
   Moon,
-  Shield,
   Sun,
   Trash2,
   User,
@@ -31,16 +26,15 @@ import {
   TouchableOpacity,
   View,
   StatusBar,
+  Platform,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Button } from "../components/button";
 import { Drawer } from "../components/drawer";
 import { useTheme } from "../contexts/ThemeContext";
-import { useToast } from "../contexts/toast-context";
 import { useAuth } from "../hooks/use-auth";
 import { useUser } from "../hooks/use-user";
 import { getThemeColors, spacing, radius, typography } from "../lib/theme";
-import { ChangePasswordScreen } from "./change-password-screen";
 import { EditProfileScreen } from "./edit-profile-screen";
 
 interface SettingsScreenProps {
@@ -52,19 +46,21 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
 }) => {
   const { theme, toggleTheme } = useTheme();
   const colors = getThemeColors(theme);
-  const { showToast } = useToast();
   const { logout, user } = useAuth();
   const { deleteLoading, deleteAccount } = useUser();
   const [showEditProfile, setShowEditProfile] = useState(false);
-  const [showChangePassword, setShowChangePassword] = useState(false);
   const [showDeleteAccount, setShowDeleteAccount] = useState(false);
-  const [deletePassword, setDeletePassword] = useState("");
-  const [showDeletePassword, setShowDeletePassword] = useState(false);
+  const [deleteConfirmation, setDeleteConfirmation] = useState("");
 
   // Drawer states
   const [showLogoutDrawer, setShowLogoutDrawer] = useState(false);
   const [showAboutDrawer, setShowAboutDrawer] = useState(false);
   const [showHelpDrawer, setShowHelpDrawer] = useState(false);
+
+  const closeDeleteAccount = () => {
+    setShowDeleteAccount(false);
+    setDeleteConfirmation("");
+  };
 
   // Nested screens are plain state, so back has to be claimed explicitly or
   // Android would close the app from here.
@@ -73,7 +69,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
       "hardwareBackPress",
       () => {
         if (showDeleteAccount) {
-          setShowDeleteAccount(false);
+          closeDeleteAccount();
           return true;
         }
         if (showLogoutDrawer) {
@@ -92,16 +88,12 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
           setShowEditProfile(false);
           return true;
         }
-        if (showChangePassword) {
-          setShowChangePassword(false);
-          return true;
-        }
         onBack();
         return true;
       }
     );
     return () => subscription.remove();
-  }, [showDeleteAccount, showLogoutDrawer, showAboutDrawer, showHelpDrawer, showEditProfile, showChangePassword, onBack]);
+  }, [showDeleteAccount, showLogoutDrawer, showAboutDrawer, showHelpDrawer, showEditProfile, onBack]);
 
   // The auth provider owns sign-out: clearing `user` re-renders the app to the
   // auth screen. Previously this logged out here AND called a parent handler
@@ -112,10 +104,9 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
   };
 
   const confirmDeleteAccount = async () => {
-    const success = await deleteAccount(deletePassword);
+    const success = await deleteAccount();
     if (success) {
-      setShowDeleteAccount(false);
-      setDeletePassword("");
+      closeDeleteAccount();
     }
   };
 
@@ -161,10 +152,6 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
     return <EditProfileScreen onBack={() => setShowEditProfile(false)} />;
   }
 
-  if (showChangePassword) {
-    return <ChangePasswordScreen onBack={() => setShowChangePassword(false)} />;
-  }
-
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       <StatusBar
@@ -172,7 +159,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
       />
 
       <View style={[styles.header, { borderBottomColor: colors.border }]}>
-        <TouchableOpacity
+        {Platform.OS === "ios" && <TouchableOpacity
           onPress={onBack}
           style={[styles.backButton, { backgroundColor: colors.surfaceSecondary }]}
           activeOpacity={0.7}
@@ -181,7 +168,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
         >
           <ChevronLeft size={20} color={colors.textPrimary} />
-        </TouchableOpacity>
+        </TouchableOpacity>}
         <Text style={[styles.headerTitle, { color: colors.textPrimary }]}>Settings</Text>
         <View style={styles.headerSpacer} />
       </View>
@@ -228,30 +215,11 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
           )}
         </View>
 
-        {/* Security Section */}
-        <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>
-            Security
-          </Text>
-          {renderSettingItem(
-            <Shield size={18} color={colors.textSecondary} />,
-            "Change Password",
-            "Update your account password",
-            () => setShowChangePassword(true)
-          )}
-        </View>
-
         {/* Data Section */}
         <View style={styles.section}>
           <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>
             Data & privacy
           </Text>
-          {renderSettingItem(
-            <Calendar size={18} color={colors.textSecondary} />,
-            "Export data",
-            "Download your payment history",
-            () => showToast("Data export coming soon", "info")
-          )}
           {renderSettingItem(
             <Trash2 size={18} color={colors.error} />,
             "Delete account",
@@ -343,7 +311,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
               <Text style={[styles.aboutLabel, { color: colors.textTertiary }]}>Version</Text>
               <Text style={[styles.aboutValue, { color: colors.textPrimary }]}>1.0.0</Text>
             </View>
-            <TouchableOpacity
+            {Platform.OS === "ios" && <TouchableOpacity
               style={[styles.aboutRow, { backgroundColor: colors.surface }]}
               onPress={openWebsite}
               activeOpacity={0.7}
@@ -356,7 +324,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
                 <Text style={[styles.aboutValue, { color: colors.primary }]}>Nabin Khair</Text>
                 <ExternalLink size={14} color={colors.primary} />
               </View>
-            </TouchableOpacity>
+            </TouchableOpacity>}
           </View>
         </View>
       </Drawer>
@@ -400,12 +368,12 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
         visible={showDeleteAccount}
         animationType="slide"
         presentationStyle="pageSheet"
-        onRequestClose={() => setShowDeleteAccount(false)}
+        onRequestClose={closeDeleteAccount}
       >
         <SafeAreaView style={[styles.modalContainer, { backgroundColor: colors.background }]}>
           <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
             <TouchableOpacity
-              onPress={() => setShowDeleteAccount(false)}
+              onPress={closeDeleteAccount}
               style={[styles.backButton, { backgroundColor: colors.surfaceSecondary }]}
             >
               <ChevronLeft size={20} color={colors.textPrimary} />
@@ -428,36 +396,28 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
 
             <View style={styles.formSection}>
               <Text style={[styles.formLabel, { color: colors.textPrimary }]}>
-                Confirm password
+                Type DELETE to confirm
               </Text>
               <Text style={[styles.formHint, { color: colors.textSecondary }]}>
-                Enter your password to delete your account and payment history.
+                This extra step helps prevent accidental deletion.
               </Text>
 
               <View style={[styles.inputContainer, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-                <Lock size={18} color={colors.textTertiary} />
                 <TextInput
                   style={[styles.input, { color: colors.textPrimary }]}
-                  placeholder="Enter your password"
+                  placeholder="DELETE"
                   placeholderTextColor={colors.textTertiary}
-                  value={deletePassword}
-                  onChangeText={setDeletePassword}
-                  secureTextEntry={!showDeletePassword}
-                  autoCapitalize="none"
+                  value={deleteConfirmation}
+                  onChangeText={setDeleteConfirmation}
+                  autoCapitalize="characters"
+                  autoCorrect={false}
                 />
-                <TouchableOpacity onPress={() => setShowDeletePassword(!showDeletePassword)}>
-                  {showDeletePassword ? (
-                    <EyeOff size={18} color={colors.textTertiary} />
-                  ) : (
-                    <Eye size={18} color={colors.textTertiary} />
-                  )}
-                </TouchableOpacity>
               </View>
             </View>
 
             <View style={styles.modalActions}>
               <Button
-                onPress={() => setShowDeleteAccount(false)}
+                onPress={closeDeleteAccount}
                 variant="secondary"
                 size="lg"
                 fullWidth
@@ -470,8 +430,9 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
                 size="lg"
                 fullWidth
                 loading={deleteLoading}
+                disabled={deleteConfirmation.trim().toUpperCase() !== "DELETE" || deleteLoading}
               >
-                Delete Account
+                Delete account
               </Button>
             </View>
           </ScrollView>

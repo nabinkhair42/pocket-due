@@ -5,7 +5,6 @@ export interface User {
   email: string;
   name: string;
   googleId?: string;
-  password?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -27,30 +26,9 @@ export interface AuthRequest extends Request {
   user?: User;
 }
 
-export interface JwtPayload {
-  userId: string;
-  email: string;
-}
-
-export interface GoogleProfile {
-  id: string;
-  displayName: string;
-  emails: Array<{ value: string; verified: boolean }>;
-  photos: Array<{ value: string }>;
-}
-
-export interface LoginRequest {
-  email: string;
-  password: string;
-}
-
-export interface RegisterRequest {
-  email: string;
-  password: string;
-  name: string;
-}
 
 export interface CreatePaymentRequest {
+  clientRequestId?: string;
   type: "to_pay" | "to_receive";
   personName: string;
   amount: number;
@@ -73,11 +51,6 @@ export interface ApiResponse<T = Record<string, unknown>> {
   error?: string;
 }
 
-export interface AuthResponse {
-  user: User;
-  token: string;
-}
-
 export interface PaymentsResponse {
   payments: Payment[];
 }
@@ -93,9 +66,4 @@ export interface UserResponse {
 export interface UpdateProfileRequest {
   name?: string;
   email?: string;
-}
-
-export interface ChangePasswordRequest {
-  currentPassword: string;
-  newPassword: string;
 }

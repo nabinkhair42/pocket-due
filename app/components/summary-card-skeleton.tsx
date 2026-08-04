@@ -1,78 +1,52 @@
-import React, { useEffect, useRef } from "react";
-import { View, StyleSheet, Animated } from "react-native";
+import React from "react";
+import { StyleSheet, View } from "react-native";
 import { useTheme } from "../contexts/ThemeContext";
-import { getThemeColors, spacing, radius } from "../lib/theme";
+import { getThemeColors, radius, spacing } from "../lib/theme";
+import { Skeleton, STAGGER_MS, usePulse, variedWidth } from "./skeleton";
 
 interface SummaryCardSkeletonProps {
   count?: number;
 }
 
-const SkeletonItem: React.FC = () => {
+const NAME_WIDTHS = [96, 124, 84, 110];
+const TOTAL_WIDTHS = [78, 92, 68, 86];
+
+const SkeletonItem: React.FC<{ index: number }> = ({ index }) => {
   const { theme } = useTheme();
   const colors = getThemeColors(theme);
-  const opacity = useRef(new Animated.Value(0.4)).current;
-
-  useEffect(() => {
-    const animation = Animated.loop(
-      Animated.sequence([
-        Animated.timing(opacity, {
-          toValue: 0.8,
-          duration: 800,
-          useNativeDriver: true,
-        }),
-        Animated.timing(opacity, {
-          toValue: 0.4,
-          duration: 800,
-          useNativeDriver: true,
-        }),
-      ])
-    );
-    animation.start();
-    return () => animation.stop();
-  }, [opacity]);
-
-  const skeletonColor = colors.surfaceSecondary;
+  const opacity = usePulse(index * STAGGER_MS);
 
   return (
-    <View
-      style={[
-        styles.card,
-        {
-          backgroundColor: colors.surface,
-          borderColor: colors.cardBorder,
-        },
-      ]}
-    >
+    <View style={[styles.card, { backgroundColor: colors.surface }]}>
       <View style={styles.header}>
         <View style={styles.personInfo}>
-          <Animated.View
-            style={[styles.avatar, { backgroundColor: skeletonColor, opacity }]}
-          />
-          <Animated.View
-            style={[styles.skeletonName, { backgroundColor: skeletonColor, opacity }]}
+          <Skeleton width={36} height={36} circle opacity={opacity} />
+          <Skeleton
+            width={variedWidth(index, NAME_WIDTHS)}
+            height={15}
+            opacity={opacity}
           />
         </View>
-        <Animated.View
-          style={[styles.skeletonAmount, { backgroundColor: skeletonColor, opacity }]}
+        <Skeleton
+          width={variedWidth(index, TOTAL_WIDTHS)}
+          height={18}
+          opacity={opacity}
         />
       </View>
+
       <View style={styles.details}>
         <View style={styles.detailRow}>
-          <Animated.View
-            style={[styles.skeletonLabel, { backgroundColor: skeletonColor, opacity }]}
-          />
-          <Animated.View
-            style={[styles.skeletonValue, { backgroundColor: skeletonColor, opacity }]}
-          />
+          <Skeleton width={68} height={13} opacity={opacity} />
+          <Skeleton width={56} height={13} opacity={opacity} />
         </View>
         <View style={styles.detailRow}>
-          <Animated.View
-            style={[styles.skeletonLabel, { backgroundColor: skeletonColor, opacity }]}
-          />
-          <Animated.View
-            style={[styles.skeletonValue, { backgroundColor: skeletonColor, opacity }]}
-          />
+          <Skeleton width={52} height={13} opacity={opacity} />
+          <Skeleton width={62} height={13} opacity={opacity} />
         </View>
+      </View>
+
+      <View style={[styles.footer, { borderTopColor: colors.borderLight }]}>
+        <Skeleton width={74} height={12} opacity={opacity} />
       </View>
     </View>
   );
@@ -82,9 +56,13 @@ export const SummaryCardSkeleton: React.FC<SummaryCardSkeletonProps> = ({
   count = 3,
 }) => {
   return (
-    <View style={styles.container}>
-      {[...Array(count)].map((_, index) => (
-        <SkeletonItem key={index} />
+    <View
+      style={styles.container}
+      accessibilityRole="progressbar"
+      accessibilityLabel="Loading summaries"
+    >
+      {Array.from({ length: count }, (_, index) => (
+        <SkeletonItem key={index} index={index} />
       ))}
     </View>
   );
@@ -92,13 +70,13 @@ export const SummaryCardSkeleton: React.FC<SummaryCardSkeletonProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    paddingTop: spacing.md,
+    paddingTop: spacing.lg,
   },
+  // Mirrors the real summary card, which has no border.
   card: {
     borderRadius: radius.lg,
     padding: spacing.lg,
     marginBottom: spacing.md,
-    borderWidth: 1,
   },
   header: {
     flexDirection: "row",
@@ -111,36 +89,18 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: spacing.md,
   },
-  avatar: {
-    width: 36,
-    height: 36,
-    borderRadius: radius.full,
-  },
-  skeletonName: {
-    height: 16,
-    width: 100,
-    borderRadius: radius.sm,
-  },
-  skeletonAmount: {
-    height: 18,
-    width: 80,
-    borderRadius: radius.sm,
-  },
   details: {
-    gap: spacing.sm,
+    gap: spacing.xs,
   },
   detailRow: {
     flexDirection: "row",
     justifyContent: "space-between",
   },
-  skeletonLabel: {
-    height: 14,
-    width: 70,
-    borderRadius: radius.sm,
-  },
-  skeletonValue: {
-    height: 14,
-    width: 60,
-    borderRadius: radius.sm,
+  // The real card has a divider + payment count; without it the placeholder
+  // is shorter than the content and the list jumps on load.
+  footer: {
+    borderTopWidth: 1,
+    paddingTop: spacing.md,
+    marginTop: spacing.md,
   },
 });

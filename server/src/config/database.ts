@@ -1,11 +1,21 @@
 import mongoose from "mongoose";
+import { MongoClient } from "mongodb";
 
 let connectionPromise: Promise<typeof mongoose> | null = null;
+export const authMongoClient = new MongoClient(
+  process.env.MONGODB_URI || "mongodb://localhost:27017/pocketDue"
+);
+export const authDatabase = authMongoClient.db();
+let authConnectionPromise: Promise<MongoClient> | null = null;
 
 export const connectDB = async (): Promise<void> => {
-  if (mongoose.connection.readyState === 1) return;
+  if (!authConnectionPromise) authConnectionPromise = authMongoClient.connect();
+  if (mongoose.connection.readyState === 1) {
+    await authConnectionPromise;
+    return;
+  }
   if (connectionPromise) {
-    await connectionPromise;
+    await Promise.all([connectionPromise, authConnectionPromise]);
     return;
   }
   try {
@@ -24,7 +34,7 @@ export const connectDB = async (): Promise<void> => {
 
 export const disconnectDB = async (): Promise<void> => {
   try {
-    await mongoose.disconnect();
+    await Promise.all([mongoose.disconnect(), authMongoClient.close()]);
     console.log("MongoDB disconnected");
   } catch (error) {
     console.error("MongoDB disconnection error:", error);

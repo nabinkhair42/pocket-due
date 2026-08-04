@@ -5,6 +5,7 @@ import {
   TouchableOpacity,
   StyleSheet,
   StatusBar,
+  Platform,
   SafeAreaView,
   ViewStyle,
 } from "react-native";
@@ -42,7 +43,7 @@ export const Layout: React.FC<LayoutProps> = ({
       {showHeader && (
         <View style={[styles.header, { borderBottomColor: colors.border }]}>
           <View style={styles.headerLeft}>
-            {onBack && (
+            {onBack && Platform.OS === "ios" && (
               <TouchableOpacity
                 onPress={onBack}
                 style={[styles.backButton, { backgroundColor: colors.surfaceSecondary }]}

@@ -8,6 +8,7 @@ export interface User {
 }
 
 export interface Payment {
+  clientRequestId?: string;
   _id: string;
   userId: string;
   type: "to_pay" | "to_receive";

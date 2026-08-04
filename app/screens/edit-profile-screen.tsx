@@ -61,7 +61,7 @@ export const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
       />
 
       <View style={[styles.header, { borderBottomColor: colors.border }]}>
-        <TouchableOpacity
+        {Platform.OS === "ios" && <TouchableOpacity
           onPress={onBack}
           style={[styles.backButton, { backgroundColor: colors.surfaceSecondary }]}
           activeOpacity={0.7}
@@ -70,7 +70,7 @@ export const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
         >
           <ChevronLeft size={20} color={colors.textPrimary} />
-        </TouchableOpacity>
+        </TouchableOpacity>}
         <Text style={[styles.headerTitle, { color: colors.textPrimary }]}>
           Edit Profile
         </Text>
@@ -91,7 +91,7 @@ export const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
             Personal Information
           </Text>
           <Text style={[styles.sectionHint, { color: colors.textTertiary }]}>
-            Update your name and email address
+            Update your display name. Your email is managed by your OAuth provider.
           </Text>
         </View>
 
@@ -124,7 +124,7 @@ export const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
                 placeholder="Enter your email"
                 placeholderTextColor={colors.textTertiary}
                 value={formData.email}
-                onChangeText={(text) => handleChange("email", text)}
+                editable={false}
                 keyboardType="email-address"
                 autoCapitalize="none"
               />

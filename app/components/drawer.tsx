@@ -8,6 +8,7 @@ import {
   TouchableWithoutFeedback,
   View,
   KeyboardAvoidingView,
+  Keyboard,
   Platform,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -90,6 +91,25 @@ export const Drawer: React.FC<DrawerProps> = ({
     }
   }, [visible, drawerHeight]);
 
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
+  useEffect(() => {
+    const showEvent = Platform.OS === "ios" ? "keyboardWillShow" : "keyboardDidShow";
+    const hideEvent = Platform.OS === "ios" ? "keyboardWillHide" : "keyboardDidHide";
+    const showSubscription = Keyboard.addListener(showEvent, (event) => {
+      setKeyboardHeight(event.endCoordinates.height);
+    });
+    const hideSubscription = Keyboard.addListener(hideEvent, () => setKeyboardHeight(0));
+    return () => {
+      showSubscription.remove();
+      hideSubscription.remove();
+    };
+  }, []);
+
+  const visibleDrawerHeight = Math.min(
+    drawerHeight,
+    Math.max(300, SCREEN_HEIGHT - keyboardHeight)
+  );
+
   const closeDrawer = useCallback(() => {
     animateOut(onClose);
   }, [animateOut, onClose]);
@@ -143,7 +163,8 @@ export const Drawer: React.FC<DrawerProps> = ({
     >
       <KeyboardAvoidingView
         style={styles.overlay}
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        keyboardVerticalOffset={0}
       >
         <TouchableWithoutFeedback onPress={closeDrawer}>
           <Animated.View
@@ -159,7 +180,7 @@ export const Drawer: React.FC<DrawerProps> = ({
             styles.drawer,
             {
               backgroundColor: colors.background,
-              height: drawerHeight,
+              height: visibleDrawerHeight,
               paddingBottom: insets.bottom,
               transform: [{ translateY }],
             },

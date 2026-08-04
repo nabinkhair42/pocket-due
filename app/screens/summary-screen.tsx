@@ -13,6 +13,7 @@ import {
   TouchableOpacity,
   View,
   StatusBar,
+  Platform,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { SummaryCardSkeleton } from "../components/summary-card-skeleton";
@@ -75,12 +76,12 @@ const SummaryDetailModal: React.FC<SummaryDetailModalProps> = ({
     >
       <SafeAreaView style={[styles.modalContainer, { backgroundColor: colors.background }]}>
         <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
-          <TouchableOpacity
+          {Platform.OS === "ios" && <TouchableOpacity
             onPress={onClose}
             style={[styles.backButton, { backgroundColor: colors.surfaceSecondary }]}
           >
             <ChevronLeft size={20} color={colors.textPrimary} />
-          </TouchableOpacity>
+          </TouchableOpacity>}
           <Text style={[styles.modalTitle, { color: colors.textPrimary }]}>
             {summary.personName}
           </Text>
@@ -276,7 +277,7 @@ export const SummaryScreen: React.FC<SummaryScreenProps> = ({ onBack }) => {
       />
 
       <View style={[styles.header, { borderBottomColor: colors.border }]}>
-        <TouchableOpacity
+        {Platform.OS === "ios" && <TouchableOpacity
           onPress={onBack}
           style={[styles.backButton, { backgroundColor: colors.surfaceSecondary }]}
           activeOpacity={0.7}
@@ -285,7 +286,7 @@ export const SummaryScreen: React.FC<SummaryScreenProps> = ({ onBack }) => {
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
         >
           <ChevronLeft size={20} color={colors.textPrimary} />
-        </TouchableOpacity>
+        </TouchableOpacity>}
         <Text style={[styles.headerTitle, { color: colors.textPrimary }]}>
           Summaries
         </Text>

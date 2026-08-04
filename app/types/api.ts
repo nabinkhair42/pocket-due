@@ -8,11 +8,6 @@ export interface ApiResponse<T = any> {
   error?: string;
 }
 
-export interface AuthResponse {
-  user: User;
-  token: string;
-}
-
 export interface PaymentsResponse {
   payments: Payment[];
 }
@@ -27,18 +22,8 @@ export interface UserResponse {
 }
 
 // Request Types
-export interface RegisterRequest {
-  email: string;
-  password: string;
-  name: string;
-}
-
-export interface LoginRequest {
-  email: string;
-  password: string;
-}
-
 export interface CreatePaymentRequest {
+  clientRequestId?: string;
   type: "to_pay" | "to_receive";
   personName: string;
   amount: number;

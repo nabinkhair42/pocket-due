@@ -12,13 +12,8 @@ export const useUser = () => {
   // Edit Profile
   const updateProfile = useCallback(
     async (data: { name: string; email: string }): Promise<boolean> => {
-      if (!data.name.trim() || !data.email.trim()) {
-        showToast("Please fill in all fields", "error");
-        return false;
-      }
-
-      if (!data.email.includes("@")) {
-        showToast("Please enter a valid email address", "error");
+      if (!data.name.trim()) {
+        showToast("Enter your name", "error");
         return false;
       }
 
@@ -26,7 +21,6 @@ export const useUser = () => {
       try {
         const result = await apiService.updateProfile({
           name: data.name.trim(),
-          email: data.email.trim(),
         });
 
         if (result.success && result.data?.user) {
@@ -43,80 +37,21 @@ export const useUser = () => {
     [showToast, updateUser]
   );
 
-  // Change Password
-  const changePassword = useCallback(
-    async (data: {
-      currentPassword: string;
-      newPassword: string;
-      confirmPassword: string;
-    }): Promise<boolean> => {
-      if (
-        !data.currentPassword.trim() ||
-        !data.newPassword.trim() ||
-        !data.confirmPassword.trim()
-      ) {
-        showToast("Please fill in all fields", "error");
-        return false;
-      }
-
-      if (data.newPassword.length < 6) {
-        showToast("New password must be at least 6 characters", "error");
-        return false;
-      }
-
-      if (data.newPassword !== data.confirmPassword) {
-        showToast("New passwords do not match", "error");
-        return false;
-      }
-
-      if (data.currentPassword === data.newPassword) {
-        showToast(
-          "New password must be different from current password",
-          "error"
-        );
-        return false;
-      }
-
-      setLoading(true);
-      try {
-        const result = await apiService.changePassword({
-          currentPassword: data.currentPassword,
-          newPassword: data.newPassword,
-        });
-
-        if (result.success) {
-          showToast("Password changed successfully", "success");
-          return true;
-        }
-        showToast(result.message || "Failed to change password", "error");
-        return false;
-      } finally {
-        setLoading(false);
-      }
-    },
-    [showToast]
-  );
-
   // Delete Account
   const deleteAccount = useCallback(
-    async (password: string): Promise<boolean> => {
-      if (!password.trim()) {
-        showToast("Please enter your password", "error");
-        return false;
-      }
-
+    async (): Promise<boolean> => {
       setDeleteLoading(true);
       try {
-        const result = await apiService.deleteAccount({ password });
+        const result = await apiService.deleteAccount();
 
         if (result.success) {
-          showToast("Account deleted successfully", "success");
+          showToast("Account deleted", "success");
           // Clearing auth state re-renders the app to the auth screen; callers
           // must not also invoke a parent logout handler.
           await logout();
           return true;
         }
-        showToast(result.message || "Failed to delete account", "error");
+        showToast(result.message || "Unable to delete your account. Try again.", "error");
         return false;
       } finally {
         setDeleteLoading(false);
@@ -141,7 +76,6 @@ export const useUser = () => {
 
     // Actions
     updateProfile,
-    changePassword,
     deleteAccount,
     getCurrentUserData,
   };

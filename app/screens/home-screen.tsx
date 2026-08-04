@@ -17,6 +17,7 @@ import { PaymentCardSkeleton } from "../components/payment-card-skeleton";
 import { Tabs } from "../components/tabs";
 import { useTheme } from "../contexts/ThemeContext";
 import { useToast } from "../contexts/toast-context";
+import { useAuth } from "../hooks/use-auth";
 import { usePayment } from "../hooks/use-payment";
 import { apiService } from "../lib/api";
 import { getThemeColors, spacing, radius, typography, shadows } from "../lib/theme";
@@ -35,6 +36,7 @@ export const HomeScreen: React.FC = () => {
   const { theme } = useTheme();
   const colors = getThemeColors(theme);
   const { showToast } = useToast();
+  const { status: authStatus } = useAuth();
   const {
     loading,
     error,
@@ -257,6 +259,15 @@ export const HomeScreen: React.FC = () => {
         </View>
       </View>
 
+      {authStatus === "offline" && (
+        <View style={[styles.offlineBanner, { backgroundColor: colors.warningLight }]}>
+          <WifiOff size={16} color={colors.warning} />
+          <Text style={[styles.offlineBannerText, { color: colors.warningDark }]}>
+            Offline mode · changes will sync when you’re back online
+          </Text>
+        </View>
+      )}
+
       <View style={styles.content}>
         <Tabs currentTab={currentTab} onTabChange={setCurrentTab} />
 
@@ -299,6 +310,7 @@ export const HomeScreen: React.FC = () => {
         onClose={handleCloseDrawer}
         onSubmit={handleSubmit}
         editingPayment={editingPayment}
+        defaultType={currentTab}
       />
     </SafeAreaView>
   );
@@ -332,6 +344,20 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     paddingHorizontal: spacing.xl,
+  },
+  offlineBanner: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.sm,
+    marginHorizontal: spacing.xl,
+    marginTop: spacing.sm,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderRadius: radius.md,
+  },
+  offlineBannerText: {
+    ...typography.captionMedium,
+    flex: 1,
   },
   listContainer: {
     paddingBottom: spacing.xxxl,

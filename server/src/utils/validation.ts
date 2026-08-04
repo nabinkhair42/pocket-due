@@ -112,18 +112,8 @@ export const validateRequest = (rules: ValidationRule[], options?: { rejectUnkno
 };
 
 // Common validation rules
-export const authValidationRules: ValidationRule[] = [
-  { field: "email", required: true, type: "email" },
-  { field: "password", required: true, type: "string", minLength: 6 },
-];
-
-export const registerValidationRules: ValidationRule[] = [
-  { field: "email", required: true, type: "email" },
-  { field: "password", required: true, type: "string", minLength: 6 },
-  { field: "name", required: true, type: "string", minLength: 2, maxLength: 50 },
-];
-
 export const paymentValidationRules: ValidationRule[] = [
+  { field: "clientRequestId", type: "string", maxLength: 100 },
   { field: "type", required: true, enum: ["to_pay", "to_receive"] },
   { field: "personName", required: true, type: "string", minLength: 2, maxLength: 100 },
   { field: "amount", required: true, type: "number", min: 0 },
@@ -142,9 +132,4 @@ export const updatePaymentValidationRules: ValidationRule[] = [
 export const profileValidationRules: ValidationRule[] = [
   { field: "name", type: "string", minLength: 2, maxLength: 50 },
   { field: "email", type: "email" },
-];
-
-export const passwordValidationRules: ValidationRule[] = [
-  { field: "currentPassword", required: true, type: "string", minLength: 6 },
-  { field: "newPassword", required: true, type: "string", minLength: 6 },
 ];

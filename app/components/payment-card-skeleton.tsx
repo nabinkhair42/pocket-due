@@ -1,78 +1,62 @@
-import React, { useEffect, useRef } from "react";
-import { View, StyleSheet, Animated } from "react-native";
+import React from "react";
+import { StyleSheet, View } from "react-native";
 import { useTheme } from "../contexts/ThemeContext";
-import { getThemeColors, spacing, radius } from "../lib/theme";
+import { getThemeColors, radius, spacing } from "../lib/theme";
+import { Skeleton, STAGGER_MS, usePulse, variedWidth } from "./skeleton";
 
 interface PaymentCardSkeletonProps {
   count?: number;
 }
 
-const SkeletonItem: React.FC = () => {
+/** Real names and amounts are ragged; identical rows read as a frozen screen. */
+const NAME_WIDTHS = [104, 132, 88, 118];
+const DATE_WIDTHS = [64, 76, 58, 70];
+const AMOUNT_WIDTHS = [72, 88, 64, 80];
+
+const SkeletonItem: React.FC<{ index: number }> = ({ index }) => {
   const { theme } = useTheme();
   const colors = getThemeColors(theme);
-  const opacity = useRef(new Animated.Value(0.4)).current;
-
-  useEffect(() => {
-    const animation = Animated.loop(
-      Animated.sequence([
-        Animated.timing(opacity, {
-          toValue: 0.8,
-          duration: 800,
-          useNativeDriver: true,
-        }),
-        Animated.timing(opacity, {
-          toValue: 0.4,
-          duration: 800,
-          useNativeDriver: true,
-        }),
-      ])
-    );
-    animation.start();
-    return () => animation.stop();
-  }, [opacity]);
-
-  const skeletonColor = colors.surfaceSecondary;
+  // One driver per card, offset per row: the card breathes as a unit and the
+  // list ripples instead of blinking in unison.
+  const opacity = usePulse(index * STAGGER_MS);
 
   return (
-    <View
-      style={[
-        styles.card,
-        {
-          backgroundColor: colors.cardBackground,
-          borderColor: colors.cardBorder,
-        },
-      ]}
-    >
+    <View style={[styles.card, { backgroundColor: colors.cardBackground }]}>
       <View style={styles.header}>
         <View style={styles.personInfo}>
-          <Animated.View
-            style={[styles.avatar, { backgroundColor: skeletonColor, opacity }]}
-          />
+          <Skeleton width={40} height={40} circle opacity={opacity} />
           <View style={styles.personDetails}>
-            <Animated.View
-              style={[styles.skeletonName, { backgroundColor: skeletonColor, opacity }]}
+            <Skeleton
+              width={variedWidth(index, NAME_WIDTHS)}
+              height={15}
+              opacity={opacity}
             />
-            <Animated.View
-              style={[styles.skeletonDate, { backgroundColor: skeletonColor, opacity }]}
+            <Skeleton
+              width={variedWidth(index, DATE_WIDTHS)}
+              height={11}
+              opacity={opacity}
+              style={styles.dueDate}
             />
           </View>
         </View>
         <View style={styles.amountSection}>
-          <Animated.View
-            style={[styles.skeletonAmount, { backgroundColor: skeletonColor, opacity }]}
+          <Skeleton
+            width={variedWidth(index, AMOUNT_WIDTHS)}
+            height={18}
+            opacity={opacity}
           />
-          <Animated.View
-            style={[styles.skeletonBadge, { backgroundColor: skeletonColor, opacity }]}
+          <Skeleton
+            width={62}
+            height={20}
+            opacity={opacity}
+            style={styles.badge}
           />
         </View>
       </View>
+
       <View style={[styles.footer, { borderTopColor: colors.borderLight }]}>
-        <Animated.View
-          style={[styles.skeletonAction, { backgroundColor: skeletonColor, opacity }]}
-        />
-        <Animated.View
-          style={[styles.skeletonAction, { backgroundColor: skeletonColor, opacity }]}
-        />
+        <Skeleton width={62} height={28} opacity={opacity} />
+        <Skeleton width={70} height={28} opacity={opacity} />
       </View>
     </View>
   );
@@ -82,9 +66,13 @@ export const PaymentCardSkeleton: React.FC<PaymentCardSkeletonProps> = ({
   count = 3,
 }) => {
   return (
-    <View style={styles.container}>
-      {[...Array(count)].map((_, index) => (
-        <SkeletonItem key={index} />
+    <View
+      style={styles.container}
+      accessibilityRole="progressbar"
+      accessibilityLabel="Loading payments"
+    >
+      {Array.from({ length: count }, (_, index) => (
+        <SkeletonItem key={index} index={index} />
       ))}
     </View>
   );
@@ -94,11 +82,12 @@ const styles = StyleSheet.create({
   container: {
     paddingTop: spacing.md,
   },
+  // Mirrors PaymentCard exactly — a border here would make the real content
+  // visibly pop when it replaces the placeholder.
   card: {
     borderRadius: radius.lg,
     padding: spacing.lg,
     marginBottom: spacing.md,
-    borderWidth: 1,
   },
   header: {
     flexDirection: "row",
@@ -110,39 +99,18 @@ const styles = StyleSheet.create({
     alignItems: "center",
     flex: 1,
   },
-  avatar: {
-    width: 40,
-    height: 40,
-    borderRadius: radius.full,
-  },
   personDetails: {
     marginLeft: spacing.md,
     flex: 1,
   },
-  skeletonName: {
-    height: 16,
-    width: 100,
-    borderRadius: radius.sm,
-    marginBottom: spacing.xs,
-  },
-  skeletonDate: {
-    height: 12,
-    width: 70,
-    borderRadius: radius.sm,
+  dueDate: {
+    marginTop: 6,
   },
   amountSection: {
     alignItems: "flex-end",
   },
-  skeletonAmount: {
-    height: 18,
-    width: 80,
-    borderRadius: radius.sm,
-    marginBottom: spacing.xs,
-  },
-  skeletonBadge: {
-    height: 20,
-    width: 60,
-    borderRadius: radius.sm,
+  badge: {
+    marginTop: spacing.xs,
   },
   footer: {
     flexDirection: "row",
@@ -151,10 +119,5 @@ const styles = StyleSheet.create({
     marginTop: spacing.md,
     paddingTop: spacing.md,
     borderTopWidth: 1,
-  },
-  skeletonAction: {
-    height: 28,
-    width: 60,
-    borderRadius: radius.sm,
   },
 });

@@ -1,6 +1,6 @@
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { ArrowDownLeft, ArrowUpRight, Calendar, ChevronDown, DollarSign, FileText, User, Check } from "lucide-react-native";
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   FlatList,
   Keyboard,
@@ -17,6 +17,7 @@ import {
 } from "react-native";
 import { useTheme } from "../contexts/ThemeContext";
 import { apiService } from "../lib/api";
+import { offlinePayments } from "../lib/offline-payments";
 import { getThemeColors, spacing, radius, typography, shadows, numericTextStyle } from "../lib/theme";
 import { CreatePaymentRequest } from "../types/api";
 import { Payment } from "../types/models";
@@ -29,6 +30,12 @@ interface AddPaymentDrawerProps {
   /** Awaited so the drawer can clear its in-flight state when the save fails. */
   onSubmit: (data: CreatePaymentRequest) => void | Promise<void>;
   editingPayment?: Payment | null;
+  /**
+   * Which type a *new* payment starts as — set from the tab the user opened the
+   * drawer from, so adding while viewing "To receive" doesn't default to "To pay".
+   * Ignored when editing, where the payment's own type wins.
+   */
+  defaultType?: CreatePaymentRequest["type"];
 }
 
 export const AddPaymentDrawer: React.FC<AddPaymentDrawerProps> = ({
@@ -36,11 +43,12 @@ export const AddPaymentDrawer: React.FC<AddPaymentDrawerProps> = ({
   onClose,
   onSubmit,
   editingPayment,
+  defaultType = "to_pay",
 }) => {
   const { theme } = useTheme();
   const colors = getThemeColors(theme);
   const [formData, setFormData] = useState<CreatePaymentRequest>({
-    type: "to_pay",
+    type: defaultType,
     personName: "",
     amount: 0,
     dueDate: new Date(),
@@ -57,6 +65,7 @@ export const AddPaymentDrawer: React.FC<AddPaymentDrawerProps> = ({
   // Dropdown state
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [searchText, setSearchText] = useState("");
+  const scrollViewRef = useRef<ScrollView>(null);
 
   const filteredOptions = useMemo(
     () =>
@@ -85,7 +94,7 @@ export const AddPaymentDrawer: React.FC<AddPaymentDrawerProps> = ({
       );
     } else {
       setFormData({
-        type: "to_pay",
+        type: defaultType,
         personName: "",
         amount: 0,
         dueDate: new Date(),
@@ -93,7 +102,7 @@ export const AddPaymentDrawer: React.FC<AddPaymentDrawerProps> = ({
       });
       setAmountText("");
     }
-  }, [editingPayment, visible]);
+  }, [editingPayment, visible, defaultType]);
 
   // Load previous users when drawer opens
   useEffect(() => {
@@ -107,6 +116,9 @@ export const AddPaymentDrawer: React.FC<AddPaymentDrawerProps> = ({
       const response = await apiService.getPreviousUsers();
       if (response.success && response.data?.previousUsers) {
         setPreviousUsers(response.data.previousUsers);
+      } else if (offlinePayments.isConnectivityError(response.error)) {
+        const cached = await offlinePayments.loadPayments();
+        setPreviousUsers([...new Set(cached.map((payment) => payment.personName))].sort());
       }
     } catch (error) {
       // Silently fail - previous users are optional
@@ -146,6 +158,17 @@ export const AddPaymentDrawer: React.FC<AddPaymentDrawerProps> = ({
     !formData.personName.trim() ||
     !Number.isFinite(parseFloat(amountText.replace(",", ".")));
 
+  /**
+   * Quick-select chips accumulate rather than replace, so tapping 50 four times
+   * reaches 200. Rounded to 2dp because repeated float addition drifts
+   * (0.1 + 0.2 === 0.30000000000000004).
+   */
+  const addQuickAmount = (increment: number) => {
+    const current = parseFloat(amountText.replace(",", "."));
+    const base = Number.isFinite(current) ? current : 0;
+    setAmountText(String(Number((base + increment).toFixed(2))));
+  };
+
   const formatDate = (date: Date) => {
     return date.toLocaleDateString("en-US", {
       month: "short",
@@ -166,6 +189,7 @@ export const AddPaymentDrawer: React.FC<AddPaymentDrawerProps> = ({
         </Text>
 
         <ScrollView
+          ref={scrollViewRef}
           style={styles.scrollView}
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
@@ -390,42 +414,48 @@ export const AddPaymentDrawer: React.FC<AddPaymentDrawerProps> = ({
 
             {/* Quick Amount Selection */}
             <View style={styles.quickAmountContainer}>
-              <Text style={[styles.quickAmountLabel, { color: colors.textTertiary }]}>
-                Quick select:
-              </Text>
+              <View style={styles.quickAmountHeader}>
+                <Text style={[styles.quickAmountLabel, { color: colors.textTertiary }]}>
+                  Quick add:
+                </Text>
+                {!!amountText && (
+                  <TouchableOpacity
+                    onPress={() => setAmountText("")}
+                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                    accessibilityRole="button"
+                    accessibilityLabel="Clear amount"
+                  >
+                    <Text style={[styles.quickAmountClear, { color: colors.primary }]}>
+                      Clear
+                    </Text>
+                  </TouchableOpacity>
+                )}
+              </View>
               <ScrollView
                 horizontal
                 showsHorizontalScrollIndicator={false}
                 contentContainerStyle={styles.quickAmountScroll}
+                keyboardShouldPersistTaps="handled"
               >
                 {[50, 100, 200, 500, 1000].map((amount) => (
                   <TouchableOpacity
                     key={amount}
                     style={[
                       styles.quickAmountBadge,
-                      {
-                        backgroundColor:
-                          amountText === String(amount)
-                            ? colors.primary
-                            : colors.surfaceSecondary,
-                      },
+                      { backgroundColor: colors.surfaceSecondary },
                     ]}
-                    onPress={() => setAmountText(String(amount))}
+                    onPress={() => addQuickAmount(amount)}
                     accessibilityRole="button"
-                    accessibilityLabel={`Set amount to ${amount}`}
+                    accessibilityLabel={`Add ${amount} to amount`}
                   >
                     <Text
                       style={[
                         styles.quickAmountText,
-                        {
-                          color:
-                            amountText === String(amount)
-                              ? colors.white
-                              : colors.textSecondary,
-                        },
+                        numericTextStyle,
+                        { color: colors.textSecondary },
                       ]}
                     >
-                      {amount}
+                      +{amount}
                     </Text>
                   </TouchableOpacity>
                 ))}
@@ -443,6 +473,10 @@ export const AddPaymentDrawer: React.FC<AddPaymentDrawerProps> = ({
                 onChangeText={(text) => setFormData({ ...formData, description: text })}
                 multiline
                 numberOfLines={2}
+                textAlignVertical="top"
+                onFocus={() => {
+                  setTimeout(() => scrollViewRef.current?.scrollToEnd({ animated: true }), 250);
+                }}
               />
             </View>
 
@@ -699,9 +733,17 @@ const styles = StyleSheet.create({
   quickAmountContainer: {
     marginBottom: spacing.md,
   },
+  quickAmountHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: spacing.sm,
+  },
   quickAmountLabel: {
     ...typography.caption,
-    marginBottom: spacing.sm,
+  },
+  quickAmountClear: {
+    ...typography.captionMedium,
   },
   quickAmountScroll: {
     gap: spacing.sm,

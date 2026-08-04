@@ -9,6 +9,14 @@ export class PaymentService {
     paymentData: CreatePaymentRequest
   ): Promise<IPayment> {
     try {
+      if (paymentData.clientRequestId) {
+        const existing = await Payment.findOne({
+          userId,
+          clientRequestId: paymentData.clientRequestId,
+        });
+        if (existing) return existing;
+      }
+
       const payment = new Payment({
         userId,
         ...paymentData,

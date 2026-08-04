@@ -15,27 +15,28 @@ function AppContent() {
     return null;
   }
 
-  return (
-    <SafeAreaProvider>
-      {user ? (
-        <HomeScreen />
-      ) : (
-        <AuthScreen onAuthSuccess={getCurrentUser} />
-      )}
-    </SafeAreaProvider>
-  );
+  return user ? <HomeScreen /> : <AuthScreen onAuthSuccess={getCurrentUser} />;
 }
 
 export default function App() {
   return (
     <ErrorBoundary>
-      <ThemeProvider>
-        <AuthProvider>
-          <ToastProvider>
-            <AppContent />
-          </ToastProvider>
-        </AuthProvider>
-      </ThemeProvider>
+      {/*
+        SafeAreaProvider must sit above every consumer of useSafeAreaInsets.
+        ToastProvider renders the Toast as a sibling of its children, so with
+        the provider nested inside AppContent the toast fell outside it and
+        threw "No safe area value available". Keeping it at the root also stops
+        the auth gate from unmounting and remeasuring insets on every sign-in.
+      */}
+      <SafeAreaProvider>
+        <ThemeProvider>
+          <AuthProvider>
+            <ToastProvider>
+              <AppContent />
+            </ToastProvider>
+          </AuthProvider>
+        </ThemeProvider>
+      </SafeAreaProvider>
     </ErrorBoundary>
   );
 }

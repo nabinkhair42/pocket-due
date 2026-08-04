@@ -1,10 +1,10 @@
 import express from "express";
 import cors from "cors";
 import helmet from "helmet";
+import { toNodeHandler } from "better-auth/node";
 import { config } from "./config/env";
 import { connectDB } from "./config/database";
-import passport from "./config/passport";
-import authRoutes from "./routes/auth.routes";
+import { auth } from "./config/auth";
 import paymentRoutes from "./routes/payments.routes";
 import { errorHandler, notFound } from "./utils/error-handler";
 import { logger } from "./utils/logger";
@@ -22,9 +22,17 @@ app.use(
     credentials: true,
   })
 );
+// Better Auth must receive the raw request before Express body parsers.
+app.all("/api/auth/*splat", async (req, res, next) => {
+  try {
+    await connectDB();
+    await toNodeHandler(auth)(req, res);
+  } catch (error) {
+    next(error);
+  }
+});
 app.use(express.json({ limit: "1mb" }));
 app.use(express.urlencoded({ extended: true }));
-app.use(passport.initialize());
 
 // Request logging middleware
 app.use((req, res, next) => {
@@ -66,7 +74,6 @@ app.get("/health", async (_, res) => {
 });
 
 // API Routes
-app.use("/api/auth", authRoutes);
 app.use("/api/payments", paymentRoutes);
 
 // 404 handler
