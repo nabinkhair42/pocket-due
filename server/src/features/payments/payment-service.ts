@@ -1,3 +1,4 @@
+import mongoose from "mongoose";
 import { Payment, IPayment } from "../../models/payment";
 import { CreatePaymentRequest, UpdatePaymentRequest } from "../../types";
 import { createError } from "../../utils/error-handler";
@@ -41,7 +42,7 @@ export class PaymentService {
         query.type = type;
       }
 
-      const filter: any = { ...query };
+      const filter: Record<string, unknown> = { ...query };
       if (cursor) filter.createdAt = { $lt: new Date(cursor) };
       const payments = await Payment.find(filter).sort({ createdAt: -1 }).limit(Math.min(limit, 100)).lean();
 
@@ -74,7 +75,7 @@ export class PaymentService {
     updateData: UpdatePaymentRequest
   ): Promise<IPayment> {
     try {
-      const allowed: any = {};
+      const allowed: Partial<IPayment> = {};
       if (updateData.type !== undefined) allowed.type = updateData.type;
       if (updateData.personName !== undefined) allowed.personName = updateData.personName;
       if (updateData.amount !== undefined) allowed.amount = updateData.amount;
@@ -162,7 +163,7 @@ export class PaymentService {
     overduePayments: number;
   }> {
     try {
-      const [stats] = await Payment.aggregate([{ $match: { userId: new (require('mongoose').Types.ObjectId)(userId) } }, { $group: { _id: null, totalPayments: { $sum: 1 }, totalAmount: { $sum: '$amount' }, paidPayments: { $sum: { $cond: [{ $in: ['$status', ['paid','received']] }, 1, 0] } }, unpaidPayments: { $sum: { $cond: [{ $in: ['$status', ['unpaid','pending']] }, 1, 0] } }, overduePayments: { $sum: { $cond: [{ $and: [{ $in: ['$status', ['unpaid','pending']] }, { $lt: ['$dueDate', new Date()] }] }, 1, 0] } } } }]);
+      const [stats] = await Payment.aggregate([{ $match: { userId: new mongoose.Types.ObjectId(userId) } }, { $group: { _id: null, totalPayments: { $sum: 1 }, totalAmount: { $sum: '$amount' }, paidPayments: { $sum: { $cond: [{ $in: ['$status', ['paid','received']] }, 1, 0] } }, unpaidPayments: { $sum: { $cond: [{ $in: ['$status', ['unpaid','pending']] }, 1, 0] } }, overduePayments: { $sum: { $cond: [{ $and: [{ $in: ['$status', ['unpaid','pending']] }, { $lt: ['$dueDate', new Date()] }] }, 1, 0] } } } }]);
 
       logger.info("Payment stats retrieved", { userId, stats });
       return stats;

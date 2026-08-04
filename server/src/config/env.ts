@@ -19,6 +19,19 @@ interface EnvironmentConfig {
 }
 
 const getEnvironmentConfig = (): EnvironmentConfig => {
+  const nodeEnv = process.env.NODE_ENV || "development";
+  const configuredOrigins = process.env.ALLOWED_ORIGINS
+    ?.split(",")
+    .map((origin) => origin.trim())
+    .filter(Boolean) ?? [];
+  const developmentOrigins = [
+    "http://localhost:3000",
+    "http://localhost:8081",
+    "http://localhost:19006",
+    "exp://localhost:8081",
+    "exp://localhost:19000",
+    "pocketdue://",
+  ];
   const authSecret = process.env.BETTER_AUTH_SECRET?.trim();
   if (!authSecret || authSecret.length < 32) {
     throw new Error("BETTER_AUTH_SECRET must be at least 32 characters");
@@ -29,7 +42,7 @@ const getEnvironmentConfig = (): EnvironmentConfig => {
     return value;
   };
   return {
-    NODE_ENV: process.env.NODE_ENV || "development",
+    NODE_ENV: nodeEnv,
     PORT: parseInt(process.env.PORT || "3000", 10),
     MONGODB_URI:
       process.env.MONGODB_URI || "mongodb://localhost:27017/pocketDue",
@@ -41,13 +54,12 @@ const getEnvironmentConfig = (): EnvironmentConfig => {
     GITHUB_CLIENT_SECRET: required("GITHUB_CLIENT_SECRET"),
     FRONTEND_URL: process.env.FRONTEND_URL || "http://localhost:3000",
     MOBILE_APP_URL: process.env.MOBILE_APP_URL || "pocketdue://",
-    ALLOWED_ORIGINS: process.env.ALLOWED_ORIGINS?.split(",") || [
-      "http://localhost:3000",
-      "http://localhost:19006",
-      "exp://localhost:19000",
-      "http://localhost:8081",
-      "pocketdue://",
-    ],
+    ALLOWED_ORIGINS: Array.from(
+      new Set([
+        ...configuredOrigins,
+        ...(nodeEnv === "development" ? developmentOrigins : []),
+      ])
+    ),
   };
 };
 

@@ -8,7 +8,6 @@ interface PaymentCardSkeletonProps {
   count?: number;
 }
 
-/** Real names and amounts are ragged; identical rows read as a frozen screen. */
 const NAME_WIDTHS = [104, 132, 88, 118];
 const DATE_WIDTHS = [64, 76, 58, 70];
 const AMOUNT_WIDTHS = [72, 88, 64, 80];
@@ -16,8 +15,6 @@ const AMOUNT_WIDTHS = [72, 88, 64, 80];
 const SkeletonItem: React.FC<{ index: number }> = ({ index }) => {
   const { theme } = useTheme();
   const colors = getThemeColors(theme);
-  // One driver per card, offset per row: the card breathes as a unit and the
-  // list ripples instead of blinking in unison.
   const opacity = usePulse(index * STAGGER_MS);
 
   return (
@@ -82,8 +79,6 @@ const styles = StyleSheet.create({
   container: {
     paddingTop: spacing.md,
   },
-  // Mirrors PaymentCard exactly — a border here would make the real content
-  // visibly pop when it replaces the placeholder.
   card: {
     borderRadius: radius.lg,
     padding: spacing.lg,

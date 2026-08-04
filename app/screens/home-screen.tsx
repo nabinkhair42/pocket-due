@@ -55,8 +55,6 @@ export const HomeScreen: React.FC = () => {
     preloadPreviousUsers();
   }, []);
 
-  // Without a navigator nothing claims the Android back press, so it would
-  // close the app from a nested screen instead of going back.
   useEffect(() => {
     const subscription = BackHandler.addEventListener(
       "hardwareBackPress",
@@ -73,7 +71,7 @@ export const HomeScreen: React.FC = () => {
           setShowSummary(false);
           return true;
         }
-        return false; // at the root: let the system exit the app
+        return false;
       }
     );
     return () => subscription.remove();
@@ -89,7 +87,6 @@ export const HomeScreen: React.FC = () => {
     const result = await getPayments();
     setRefreshing(false);
     if (!result.ok && result.error !== "UNAUTHORIZED") {
-      // A 401 already routes to sign-in, so only surface real load failures.
       showToast("Failed to load payments", "error");
     }
   };
@@ -149,7 +146,6 @@ export const HomeScreen: React.FC = () => {
   );
 
   const handleSubmit = (formData: CreatePaymentRequest) => {
-    // Returned so the drawer can await it and clear its submitting state.
     return editingPayment
       ? handleUpdatePayment(formData)
       : handleAddPayment(formData);
@@ -166,7 +162,6 @@ export const HomeScreen: React.FC = () => {
   };
 
   const renderEmptyState = () => {
-    // An error must not read as "you have no payments" — that looks like data loss.
     if (error) {
       return (
         <View style={styles.emptyContainer}>

@@ -12,7 +12,6 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  TouchableWithoutFeedback,
   View,
 } from "react-native";
 import { useTheme } from "../contexts/ThemeContext";
@@ -27,14 +26,8 @@ import { Drawer } from "./drawer";
 interface AddPaymentDrawerProps {
   visible: boolean;
   onClose: () => void;
-  /** Awaited so the drawer can clear its in-flight state when the save fails. */
   onSubmit: (data: CreatePaymentRequest) => void | Promise<void>;
   editingPayment?: Payment | null;
-  /**
-   * Which type a *new* payment starts as — set from the tab the user opened the
-   * drawer from, so adding while viewing "To receive" doesn't default to "To pay".
-   * Ignored when editing, where the payment's own type wins.
-   */
   defaultType?: CreatePaymentRequest["type"];
 }
 
@@ -54,9 +47,6 @@ export const AddPaymentDrawer: React.FC<AddPaymentDrawerProps> = ({
     dueDate: new Date(),
     description: "",
   });
-  // The amount is held as raw text while editing. Round-tripping through
-  // parseFloat on every keystroke made decimals impossible to type: "12."
-  // parsed to 12 and re-rendered as "12", eating the separator.
   const [amountText, setAmountText] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [showDatePicker, setShowDatePicker] = useState(false);
@@ -132,7 +122,7 @@ export const AddPaymentDrawer: React.FC<AddPaymentDrawerProps> = ({
   };
 
   const handleSubmit = async () => {
-    if (submitting) return; // guard against a double tap creating two payments
+    if (submitting) return;
 
     if (!formData.personName.trim()) {
       return;
@@ -145,8 +135,6 @@ export const AddPaymentDrawer: React.FC<AddPaymentDrawerProps> = ({
 
     setSubmitting(true);
     try {
-      // On success the parent closes the drawer; on failure it stays open, so
-      // the flag has to be cleared either way or the button stays disabled.
       await onSubmit({ ...formData, amount: parsedAmount });
     } finally {
       setSubmitting(false);
@@ -158,11 +146,6 @@ export const AddPaymentDrawer: React.FC<AddPaymentDrawerProps> = ({
     !formData.personName.trim() ||
     !Number.isFinite(parseFloat(amountText.replace(",", ".")));
 
-  /**
-   * Quick-select chips accumulate rather than replace, so tapping 50 four times
-   * reaches 200. Rounded to 2dp because repeated float addition drifts
-   * (0.1 + 0.2 === 0.30000000000000004).
-   */
   const addQuickAmount = (increment: number) => {
     const current = parseFloat(amountText.replace(",", "."));
     const base = Number.isFinite(current) ? current : 0;
@@ -310,10 +293,9 @@ export const AddPaymentDrawer: React.FC<AddPaymentDrawerProps> = ({
                 animationType="fade"
                 onRequestClose={() => setIsDropdownOpen(false)}
               >
-                <TouchableWithoutFeedback onPress={() => setIsDropdownOpen(false)}>
-                  <View style={styles.dropdownOverlay}>
-                    <TouchableWithoutFeedback>
-                      <View
+                <Pressable style={styles.dropdownOverlay} onPress={() => setIsDropdownOpen(false)}>
+                    <Pressable
+                      onPress={(event) => event.stopPropagation()}
                         style={[
                           styles.dropdownModal,
                           {
@@ -322,7 +304,7 @@ export const AddPaymentDrawer: React.FC<AddPaymentDrawerProps> = ({
                           },
                           shadows.lg,
                         ]}
-                      >
+                    >
                         {/* Search Input */}
                         <View style={[styles.dropdownSearchContainer, { borderBottomColor: colors.borderLight }]}>
                           <User size={16} color={colors.textTertiary} />
@@ -383,10 +365,8 @@ export const AddPaymentDrawer: React.FC<AddPaymentDrawerProps> = ({
                             </View>
                           }
                         />
-                      </View>
-                    </TouchableWithoutFeedback>
-                  </View>
-                </TouchableWithoutFeedback>
+                    </Pressable>
+                </Pressable>
               </Modal>
             </View>
 
@@ -399,8 +379,6 @@ export const AddPaymentDrawer: React.FC<AddPaymentDrawerProps> = ({
                 placeholderTextColor={colors.textTertiary}
                 value={amountText}
                 onChangeText={(text) => {
-                  // Keep the raw text so partial input like "12." survives a
-                  // render; collapse to at most one decimal separator.
                   const normalized = text.replace(",", ".").replace(/[^0-9.]/g, "");
                   const [whole, ...rest] = normalized.split(".");
                   setAmountText(
@@ -515,8 +493,6 @@ export const AddPaymentDrawer: React.FC<AddPaymentDrawerProps> = ({
             display="default"
             onChange={(event, selectedDate) => {
               setShowDatePicker(false);
-              // Android fires onChange for Cancel too, and still supplies a
-              // date — committing it would silently change the due date.
               if (event.type === "set" && selectedDate) {
                 setFormData({ ...formData, dueDate: selectedDate });
               }
@@ -532,10 +508,11 @@ export const AddPaymentDrawer: React.FC<AddPaymentDrawerProps> = ({
             animationType="fade"
             onRequestClose={() => setShowDatePicker(false)}
           >
-            <TouchableWithoutFeedback onPress={() => setShowDatePicker(false)}>
-              <View style={styles.datePickerOverlay}>
-                <TouchableWithoutFeedback>
-                  <View style={[styles.datePickerModal, { backgroundColor: colors.surface }]}>
+            <Pressable style={styles.datePickerOverlay} onPress={() => setShowDatePicker(false)}>
+                <Pressable
+                  onPress={(event) => event.stopPropagation()}
+                  style={[styles.datePickerModal, { backgroundColor: colors.surface }]}
+                >
                     <View style={[styles.datePickerHeader, { borderBottomColor: colors.borderLight }]}>
                       <Text style={[styles.datePickerTitle, { color: colors.textPrimary }]}>
                         Select Date
@@ -558,10 +535,8 @@ export const AddPaymentDrawer: React.FC<AddPaymentDrawerProps> = ({
                       }}
                       style={styles.iosDatePicker}
                     />
-                  </View>
-                </TouchableWithoutFeedback>
-              </View>
-            </TouchableWithoutFeedback>
+                </Pressable>
+            </Pressable>
           </Modal>
         )}
       </View>

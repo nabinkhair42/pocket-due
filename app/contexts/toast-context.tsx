@@ -27,14 +27,6 @@ interface ToastProviderProps {
   children: React.ReactNode;
 }
 
-/**
- * Android uses the OS toast: it renders in a system-owned window, so it always
- * sits above the keyboard, survives navigation, and matches what users expect
- * from every other app on the device.
- *
- * iOS has no system toast (Apple ships no ToastIOS and no public equivalent),
- * so it falls back to the in-app snackbar, which tracks the keyboard manually.
- */
 const isAndroid = Platform.OS === "android";
 
 export const ToastProvider: React.FC<ToastProviderProps> = ({ children }) => {
@@ -45,8 +37,6 @@ export const ToastProvider: React.FC<ToastProviderProps> = ({ children }) => {
   const showToast = useCallback(
     (toastMessage: string, toastVariant: ToastVariant) => {
       if (isAndroid) {
-        // The platform toast carries no variant styling; the message text has
-        // to communicate success vs failure on its own.
         ToastAndroid.showWithGravity(
           toastMessage,
           ToastAndroid.SHORT,
@@ -63,7 +53,6 @@ export const ToastProvider: React.FC<ToastProviderProps> = ({ children }) => {
   );
 
   const hideToast = useCallback(() => {
-    // Android's toast is owned by the OS and can't be dismissed early.
     if (isAndroid) return;
     setVisible(false);
   }, []);

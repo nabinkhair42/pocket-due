@@ -1,5 +1,5 @@
-// API service for PocketDue mobile app
 import { API_BASE_URL, authClient } from "./auth-client";
+import { Platform } from "react-native";
 import {
   ApiResponse,
   CreatePaymentRequest,
@@ -17,11 +17,6 @@ type AuthFailureListener = () => void;
 class ApiService {
   private authFailureListeners = new Set<AuthFailureListener>();
 
-  /**
-   * Lets the auth layer react to an expired/rejected token. The transport
-   * detects the 401; this is the channel back to UI state.
-   * Returns an unsubscribe function.
-   */
   onAuthFailure(listener: AuthFailureListener): () => void {
     this.authFailureListeners.add(listener);
     return () => {
@@ -30,11 +25,7 @@ class ApiService {
   }
 
   private emitAuthFailure(): void {
-    this.authFailureListeners.forEach((listener) => {
-      try {
-        listener();
-      } catch (error) {}
-    });
+    this.authFailureListeners.forEach((listener) => listener());
   }
 
   private async makeRequest<T>(
@@ -45,7 +36,7 @@ class ApiService {
     const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
 
     try {
-      const cookie = (authClient as any).getCookie?.() as string | undefined;
+      const cookie = Platform.OS === "web" ? "" : authClient.getCookie();
 
       const headers: Record<string, string> = {
         "Content-Type": "application/json",
@@ -59,17 +50,16 @@ class ApiService {
       const response = await fetch(`${API_BASE_URL}${endpoint}`, {
         ...options,
         headers,
+        credentials: Platform.OS === "web" ? "include" : "omit",
         signal: controller.signal,
       });
 
-      // A gateway error page or a 204 body is not JSON; parsing it must not
-      // masquerade as a network failure.
-      let data: any = null;
+      let data: ApiResponse<T> | null = null;
       const rawBody = await response.text();
       if (rawBody) {
         try {
-          data = JSON.parse(rawBody);
-        } catch (error) {
+          data = JSON.parse(rawBody) as ApiResponse<T>;
+        } catch {
           return {
             success: false,
             message: "Unexpected server response",
@@ -78,8 +68,6 @@ class ApiService {
         }
       }
 
-      // Expired or rejected token: clear it and notify the auth layer so the
-      // user is actually sent back to sign-in instead of seeing empty data.
       if (response.status === 401) {
         this.emitAuthFailure();
         return {
@@ -99,15 +87,13 @@ class ApiService {
         };
       }
 
-      // A successful response with no body (e.g. 204) still has to satisfy the
-      // ApiResponse contract callers destructure.
       if (data === null) {
         return { success: true } as ApiResponse<T>;
       }
 
       return data;
-    } catch (error: any) {
-      if (error?.name === "AbortError") {
+    } catch (error: unknown) {
+      if (error instanceof Error && error.name === "AbortError") {
         return {
           success: false,
           message: "The request timed out. Please try again.",
@@ -128,17 +114,35 @@ class ApiService {
     name?: string;
     email?: string;
   }): Promise<ApiResponse<UserResponse>> {
-    const result = await (authClient as any).updateUser(data);
-    if (result?.data?.user) return { success: true, data: { user: result.data.user } } as any;
-    return { success: false, message: result?.error?.message || "Failed to update profile", error: "REQUEST_FAILED" };
+    const result = await authClient.updateUser(data);
+    if (result.error) {
+      return { success: false, message: result.error.message, error: "REQUEST_FAILED" };
+    }
+    const session = await authClient.getSession();
+    if (!session.data?.user) {
+      return { success: false, message: "Failed to update profile", error: "REQUEST_FAILED" };
+    }
+    const user = session.data.user;
+    return {
+      success: true,
+      data: {
+        user: {
+          _id: user.id,
+          email: user.email,
+          name: user.name,
+          image: user.image ?? undefined,
+          createdAt: new Date(user.createdAt).toISOString(),
+          updatedAt: new Date(user.updatedAt).toISOString(),
+        },
+      },
+    };
   }
 
   async deleteAccount(): Promise<ApiResponse> {
-    const result = await (authClient as any).deleteUser();
+    const result = await authClient.deleteUser();
     return result?.error ? { success: false, message: result.error.message, error: "REQUEST_FAILED" } : { success: true };
   }
 
-  // Payment methods
   async getPayments(): Promise<ApiResponse<PaymentsResponse>> {
     return this.makeRequest<PaymentsResponse>("/api/payments");
   }

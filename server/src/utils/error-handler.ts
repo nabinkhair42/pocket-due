@@ -43,9 +43,9 @@ export const errorHandler = (
 
   // If it's not our custom error, create one
   if (!(error instanceof AppError)) {
-    const anyErr = error as any;
-    if (anyErr?.name === "ValidationError") error = new AppError("Invalid request data", 400);
-    else if (anyErr?.code === 11000) error = new AppError("Resource already exists", 409);
+    const errorDetails = error as Error & { code?: number };
+    if (errorDetails.name === "ValidationError") error = new AppError("Invalid request data", 400);
+    else if (errorDetails.code === 11000) error = new AppError("Resource already exists", 409);
     else error = new AppError("Internal server error", 500, false);
   }
 

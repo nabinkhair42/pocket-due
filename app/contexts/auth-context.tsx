@@ -1,7 +1,7 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { Platform } from "react-native";
 import { authClient, SocialProvider } from "../lib/auth-client";
-import { ApiResponse } from "../types/api";
 import { User } from "../types/models";
 
 const CACHED_USER_KEY = "pocketdue.current-user.v2";
@@ -19,12 +19,22 @@ interface AuthContextType {
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
-const toUser = (value: any): User => ({
+type SessionUser = {
+  id: string;
+  email: string;
+  name: string;
+  createdAt: Date;
+  updatedAt: Date;
+  image?: string | null;
+};
+
+const toUser = (value: SessionUser): User => ({
   _id: value.id,
   email: value.email,
   name: value.name,
   createdAt: new Date(value.createdAt ?? Date.now()).toISOString(),
   updatedAt: new Date(value.updatedAt ?? Date.now()).toISOString(),
+  image: value.image ?? undefined,
 });
 
 export const useAuth = () => {
@@ -38,21 +48,7 @@ export const AuthProvider: React.FC<React.PropsWithChildren> = ({ children }) =>
   const [status, setStatus] = useState<AuthStatus>("loading");
   const [loading, setLoading] = useState(false);
 
-  const getCurrentUser = useCallback(async () => {
-    const { data, error } = await authClient.getSession() as any;
-    if (data?.user) {
-      const nextUser = toUser(data.user);
-      setUser(nextUser);
-      setStatus("authenticated");
-      await AsyncStorage.setItem(CACHED_USER_KEY, JSON.stringify(nextUser));
-      return nextUser;
-    }
-    if (!error) {
-      setUser(null);
-      setStatus("guest");
-      await AsyncStorage.removeItem(CACHED_USER_KEY);
-      return null;
-    }
+  const resolveFromCache = useCallback(async (): Promise<User | null> => {
     const cached = await AsyncStorage.getItem(CACHED_USER_KEY);
     if (cached) {
       const cachedUser = JSON.parse(cached) as User;
@@ -64,6 +60,28 @@ export const AuthProvider: React.FC<React.PropsWithChildren> = ({ children }) =>
     return null;
   }, []);
 
+  const getCurrentUser = useCallback(async () => {
+    try {
+      const { data, error } = await authClient.getSession();
+      if (data?.user) {
+        const nextUser = toUser(data.user);
+        setUser(nextUser);
+        setStatus("authenticated");
+        await AsyncStorage.setItem(CACHED_USER_KEY, JSON.stringify(nextUser));
+        return nextUser;
+      }
+      if (!error) {
+        setUser(null);
+        setStatus("guest");
+        await AsyncStorage.removeItem(CACHED_USER_KEY);
+        return null;
+      }
+      return await resolveFromCache();
+    } catch {
+      return await resolveFromCache();
+    }
+  }, [resolveFromCache]);
+
   useEffect(() => { void getCurrentUser(); }, [getCurrentUser]);
 
   const signInWithProvider = useCallback(async (provider: SocialProvider): Promise<SignInResult> => {
@@ -71,8 +89,8 @@ export const AuthProvider: React.FC<React.PropsWithChildren> = ({ children }) =>
     try {
       const { error } = await authClient.signIn.social({
         provider,
-        callbackURL: "pocketdue://auth/callback",
-      }) as any;
+        callbackURL: Platform.OS === "web" ? window.location.origin : "pocketdue://auth/callback",
+      });
       if (error) return { success: false, error: error.message || "Sign-in failed." };
       await getCurrentUser();
       return { success: true };

@@ -3,10 +3,6 @@ import Svg, { Path } from "react-native-svg";
 
 interface GithubIconProps {
   size?: number;
-  /**
-   * The mark is monochrome, so it must follow the theme — the source SVG's
-   * #1b1f23 would be invisible against a dark background.
-   */
   color?: string;
 }
 

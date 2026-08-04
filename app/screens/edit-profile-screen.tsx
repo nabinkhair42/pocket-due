@@ -28,8 +28,6 @@ export const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
   const colors = getThemeColors(theme);
   const { loading, updateProfile, getCurrentUserData } = useUser();
   const [formData, setFormData] = useState(() => getCurrentUserData());
-  // Once the user starts typing, a late-arriving /auth/me response must not
-  // overwrite their input mid-keystroke.
   const isDirty = useRef(false);
 
   useEffect(() => {

@@ -1,6 +1,6 @@
 import { Check, Clock, Edit2, Trash2 } from "lucide-react-native";
 import React, { useState } from "react";
-import { Pressable, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { Platform, Pressable, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { useTheme } from "../contexts/ThemeContext";
 import { getThemeColors, spacing, radius, typography, numericTextStyle } from "../lib/theme";
 import { Payment } from "../types/models";
@@ -108,7 +108,12 @@ export const PaymentCard = React.memo<PaymentCardProps>(({
     <>
       <Pressable
         onPress={() => setShowStatusDrawer(true)}
-        style={({ pressed }) => [styles.card, { backgroundColor: colors.cardBackground, shadowColor: colors.black }, pressed && { transform: [{ scale: 0.99 }] }]}
+        style={({ pressed }) => [
+          styles.card,
+          { backgroundColor: colors.cardBackground },
+          Platform.OS === "ios" && { shadowColor: colors.black },
+          pressed && { transform: [{ scale: 0.99 }] },
+        ]}
       >
         <View style={styles.header}>
           <View style={styles.personInfo}>
@@ -272,10 +277,15 @@ const styles = StyleSheet.create({
     borderRadius: radius.lg,
     padding: spacing.lg,
     marginBottom: spacing.md,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 6,
-    elevation: 2,
+    ...Platform.select({
+      web: { boxShadow: "0 2px 6px rgba(0, 0, 0, 0.06)" },
+      ios: {
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.06,
+        shadowRadius: 6,
+      },
+      android: { elevation: 2 },
+    }),
   },
   header: {
     flexDirection: "row",

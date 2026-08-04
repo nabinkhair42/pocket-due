@@ -24,12 +24,8 @@ interface ToastProps {
 }
 
 const HIDDEN_OFFSET = 120;
+const USE_NATIVE_DRIVER = Platform.OS !== "web";
 
-/**
- * iOS-only fallback. Android uses the platform toast (see toast-context), which
- * the OS draws in its own window above the keyboard; iOS ships no equivalent,
- * so this one has to track the keyboard itself or it sits underneath it.
- */
 export const Toast: React.FC<ToastProps> = ({
   message,
   variant,
@@ -43,16 +39,10 @@ export const Toast: React.FC<ToastProps> = ({
   const translateY = useRef(new Animated.Value(HIDDEN_OFFSET)).current;
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [keyboardHeight, setKeyboardHeight] = useState(0);
-  // Read through a ref so the keyboard listeners never capture a stale closure.
   const onCloseRef = useRef(onClose);
   onCloseRef.current = onClose;
 
-  // `keyboardWillChangeFrame` covers show, hide, height changes (autocomplete
-  // bar, split keyboard) and interactive dismissal in one event, and fires
-  // before the frame lands so the toast rides up with it rather than lagging.
   useEffect(() => {
-    // These two events are iOS-only. Android uses the platform toast and web
-    // has no keyboard overlay, so neither needs a subscription here.
     if (Platform.OS !== "ios") return;
 
     const onFrameChange = Keyboard.addListener(
@@ -83,7 +73,7 @@ export const Toast: React.FC<ToastProps> = ({
 
     Animated.spring(translateY, {
       toValue: 0,
-      useNativeDriver: true,
+      useNativeDriver: USE_NATIVE_DRIVER,
       damping: 20,
       stiffness: 300,
     }).start();
@@ -93,7 +83,7 @@ export const Toast: React.FC<ToastProps> = ({
         toValue: HIDDEN_OFFSET,
         duration: 180,
         easing: Easing.in(Easing.quad),
-        useNativeDriver: true,
+        useNativeDriver: USE_NATIVE_DRIVER,
       }).start(({ finished }) => {
         if (finished) onCloseRef.current();
       });
@@ -102,9 +92,6 @@ export const Toast: React.FC<ToastProps> = ({
     return () => {
       if (timerRef.current) clearTimeout(timerRef.current);
     };
-    // `message`/`variant` are dependencies too: a second toast raised while one
-    // is still showing doesn't change `visible`, so without them the first
-    // toast's timer would survive and cut the new message short.
   }, [visible, message, variant, duration, translateY]);
 
   const dismiss = () => {
@@ -113,7 +100,7 @@ export const Toast: React.FC<ToastProps> = ({
       toValue: HIDDEN_OFFSET,
       duration: 160,
       easing: Easing.in(Easing.quad),
-      useNativeDriver: true,
+      useNativeDriver: USE_NATIVE_DRIVER,
     }).start(({ finished }) => {
       if (finished) onCloseRef.current();
     });
@@ -129,18 +116,15 @@ export const Toast: React.FC<ToastProps> = ({
 
   const IconComponent = variantConfig.icon;
 
-  // Snackbar convention: inverted surface so it reads as an overlay, not a card.
   const snackbarBg = theme === "light" ? colors.textPrimary : colors.surface;
   const snackbarText = theme === "light" ? colors.white : colors.textPrimary;
 
-  // Sit above the keyboard when it's up; above the home indicator when it isn't.
   const bottom =
     (keyboardHeight > 0 ? keyboardHeight : insets.bottom) + spacing.lg;
 
   return (
     <Animated.View
-      pointerEvents="box-none"
-      style={[styles.container, { bottom, transform: [{ translateY }] }]}
+      style={[styles.container, { bottom, pointerEvents: "box-none", transform: [{ translateY }] }]}
     >
       <TouchableOpacity
         activeOpacity={0.9}
@@ -173,11 +157,16 @@ const styles = StyleSheet.create({
     borderRadius: radius.md,
     gap: spacing.md,
     minHeight: 44,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.18,
-    shadowRadius: 8,
-    elevation: 4,
+    ...Platform.select({
+      web: { boxShadow: "0 2px 8px rgba(0, 0, 0, 0.18)" },
+      ios: {
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.18,
+        shadowRadius: 8,
+      },
+      android: { elevation: 4 },
+    }),
   },
   message: {
     flex: 1,

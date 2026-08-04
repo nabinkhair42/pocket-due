@@ -9,10 +9,6 @@ interface ErrorBoundaryState {
   error: Error | null;
 }
 
-/**
- * Without this, any render-time throw unmounts the whole tree and leaves the
- * user staring at a blank screen with no way back.
- */
 export class ErrorBoundary extends React.Component<
   ErrorBoundaryProps,
   ErrorBoundaryState
@@ -24,7 +20,6 @@ export class ErrorBoundary extends React.Component<
   }
 
   componentDidCatch(error: Error, info: React.ErrorInfo) {
-    // Replace with a crash reporter (Sentry/Bugsnag) when one is added.
     console.error("Unhandled render error", error, info.componentStack);
   }
 
@@ -38,7 +33,6 @@ export class ErrorBoundary extends React.Component<
       return this.props.children;
     }
 
-    // Deliberately theme-free: the theme provider may be what failed.
     return (
       <View style={styles.container}>
         <Text style={styles.title}>Something went wrong</Text>

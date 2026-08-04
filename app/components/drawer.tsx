@@ -4,8 +4,8 @@ import {
   Dimensions,
   Modal,
   PanResponder,
+  Pressable,
   StyleSheet,
-  TouchableWithoutFeedback,
   View,
   KeyboardAvoidingView,
   Keyboard,
@@ -17,6 +17,8 @@ import { getThemeColors, spacing, radius } from "../lib/theme";
 
 const { height: SCREEN_HEIGHT } = Dimensions.get("window");
 const DRAG_THRESHOLD = 100;
+const USE_NATIVE_DRIVER = Platform.OS !== "web";
+const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
 interface DrawerProps {
   visible: boolean;
@@ -36,9 +38,6 @@ export const Drawer: React.FC<DrawerProps> = ({
   const insets = useSafeAreaInsets();
   const translateY = useRef(new Animated.Value(SCREEN_HEIGHT)).current;
   const backdropOpacity = useRef(new Animated.Value(0)).current;
-  // Kept mounted through the exit animation. Without this, a parent setting
-  // visible=false made the drawer vanish instantly, while swipe-to-dismiss
-  // animated — the same action looked different depending on how it started.
   const [isRendered, setIsRendered] = useState(visible);
 
   // Calculate drawer height - use provided height or auto-size
@@ -50,12 +49,12 @@ export const Drawer: React.FC<DrawerProps> = ({
         Animated.timing(translateY, {
           toValue: drawerHeight,
           duration: 200,
-          useNativeDriver: true,
+          useNativeDriver: USE_NATIVE_DRIVER,
         }),
         Animated.timing(backdropOpacity, {
           toValue: 0,
           duration: 200,
-          useNativeDriver: true,
+          useNativeDriver: USE_NATIVE_DRIVER,
         }),
       ]).start(({ finished }) => {
         if (finished) {
@@ -76,14 +75,14 @@ export const Drawer: React.FC<DrawerProps> = ({
       Animated.parallel([
         Animated.spring(translateY, {
           toValue: 0,
-          useNativeDriver: true,
+          useNativeDriver: USE_NATIVE_DRIVER,
           damping: 25,
           stiffness: 200,
         }),
         Animated.timing(backdropOpacity, {
           toValue: 1,
           duration: 250,
-          useNativeDriver: true,
+          useNativeDriver: USE_NATIVE_DRIVER,
         }),
       ]).start();
     } else if (isRendered) {
@@ -114,13 +113,9 @@ export const Drawer: React.FC<DrawerProps> = ({
     animateOut(onClose);
   }, [animateOut, onClose]);
 
-  // The gesture handler below is created once, so it reads the latest close
-  // callback through a ref rather than capturing a stale one.
   const closeDrawerRef = useRef(closeDrawer);
   closeDrawerRef.current = closeDrawer;
 
-  // Created once. Passing PanResponder.create(...) straight to useRef would
-  // re-evaluate it on every render and throw the result away.
   const panResponderRef = useRef<ReturnType<
     typeof PanResponder.create
   > | null>(null);
@@ -141,7 +136,7 @@ export const Drawer: React.FC<DrawerProps> = ({
         } else {
           Animated.spring(translateY, {
             toValue: 0,
-            useNativeDriver: true,
+            useNativeDriver: USE_NATIVE_DRIVER,
             damping: 25,
             stiffness: 200,
           }).start();
@@ -166,14 +161,12 @@ export const Drawer: React.FC<DrawerProps> = ({
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         keyboardVerticalOffset={0}
       >
-        <TouchableWithoutFeedback onPress={closeDrawer}>
-          <Animated.View
-            style={[
-              styles.backdrop,
-              { opacity: backdropOpacity },
-            ]}
-          />
-        </TouchableWithoutFeedback>
+        <AnimatedPressable
+          accessibilityRole="button"
+          accessibilityLabel="Close drawer"
+          onPress={closeDrawer}
+          style={[styles.backdrop, { opacity: backdropOpacity }]}
+        />
 
         <Animated.View
           style={[
@@ -212,11 +205,16 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: radius.xl,
     borderTopRightRadius: radius.xl,
     overflow: "hidden",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: -4 },
-    shadowOpacity: 0.12,
-    shadowRadius: 12,
-    elevation: 8,
+    ...Platform.select({
+      web: { boxShadow: "0 -4px 12px rgba(0, 0, 0, 0.12)" },
+      ios: {
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: -4 },
+        shadowOpacity: 0.12,
+        shadowRadius: 12,
+      },
+      android: { elevation: 8 },
+    }),
   },
   handleContainer: {
     alignItems: "center",

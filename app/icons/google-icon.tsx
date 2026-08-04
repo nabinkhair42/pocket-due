@@ -5,18 +5,6 @@ interface GoogleIconProps {
   size?: number;
 }
 
-/**
- * Google's official four-colour "G".
- *
- * The gradient-mesh artwork (8 radial gradients + feGaussianBlur) is not used
- * here: react-native-svg has no reliable filter support on Android, so the blur
- * primitives are dropped at render time and the mesh renders with hard seams.
- * The flat mark is also what Google's sign-in branding guidelines require, and
- * at button size the mesh detail is invisible anyway.
- *
- * Fixed brand colours by design — Google prohibits recolouring the mark, so
- * this deliberately takes no `color` prop.
- */
 export const GoogleIcon: React.FC<GoogleIconProps> = ({ size = 20 }) => (
   <Svg width={size} height={size} viewBox="0 0 48 48">
     <Path

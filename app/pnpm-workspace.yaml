@@ -1,3 +1,6 @@
+packages:
+  - "."
+
 minimumReleaseAgeExclude:
   - '@expo/cli@57.0.12'
   - '@expo/router-server@57.0.5'

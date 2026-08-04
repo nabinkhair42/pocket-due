@@ -27,6 +27,7 @@ import {
   View,
   StatusBar,
   Platform,
+  Image,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Button } from "../components/button";
@@ -62,8 +63,6 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
     setDeleteConfirmation("");
   };
 
-  // Nested screens are plain state, so back has to be claimed explicitly or
-  // Android would close the app from here.
   useEffect(() => {
     const subscription = BackHandler.addEventListener(
       "hardwareBackPress",
@@ -95,9 +94,6 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
     return () => subscription.remove();
   }, [showDeleteAccount, showLogoutDrawer, showAboutDrawer, showHelpDrawer, showEditProfile, onBack]);
 
-  // The auth provider owns sign-out: clearing `user` re-renders the app to the
-  // auth screen. Previously this logged out here AND called a parent handler
-  // that logged out again, firing a second, unauthenticated request.
   const handleLogoutConfirm = async () => {
     setShowLogoutDrawer(false);
     await logout();
@@ -180,7 +176,11 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
             Account
           </Text>
           {renderSettingItem(
-            <User size={18} color={colors.primary} />,
+            user?.image ? (
+              <Image source={{ uri: user.image }} style={styles.avatar} />
+            ) : (
+              <User size={18} color={colors.primary} />
+            ),
             user?.name || "User Name",
             user?.email || "user@example.com"
           )}
@@ -466,6 +466,11 @@ const styles = StyleSheet.create({
   },
   headerSpacer: {
     flex: 1,
+  },
+  avatar: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
   },
   content: {
     flex: 1,

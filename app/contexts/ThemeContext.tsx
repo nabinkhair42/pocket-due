@@ -28,7 +28,6 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
   const systemColorScheme = useColorScheme();
   const [theme, setThemeState] = useState<Theme>(systemColorScheme === "dark" ? "dark" : "light");
   const [isLoaded, setIsLoaded] = useState(false);
-  // Null until the user picks a theme explicitly; while null we follow the OS.
   const [hasExplicitChoice, setHasExplicitChoice] = useState(false);
 
   useEffect(() => {
@@ -49,15 +48,12 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
     }
   };
 
-  // useColorScheme was only read in the useState initializer, so flipping the
-  // OS to dark while the app was open changed nothing until a restart.
   useEffect(() => {
     if (hasExplicitChoice) return;
     setThemeState(systemColorScheme === "dark" ? "dark" : "light");
   }, [systemColorScheme, hasExplicitChoice]);
 
   const setTheme = useCallback(async (newTheme: Theme) => {
-    // Update immediately; persistence must not gate the UI.
     setThemeState(newTheme);
     setHasExplicitChoice(true);
     try {

@@ -1,4 +1,5 @@
 import { Theme } from "../contexts/ThemeContext";
+import { Platform } from "react-native";
 import type { TextStyle } from "react-native";
 
 // Spacing scale (4px base unit)
@@ -174,25 +175,19 @@ export const getThemeColors = (theme: Theme) => {
 
 // Shadow presets
 export const shadows = {
-  sm: {
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 1,
-  },
-  md: {
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  lg: {
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
-  },
+  sm: Platform.select({
+    web: { boxShadow: "0 1px 2px rgba(0, 0, 0, 0.05)" },
+    ios: { shadowColor: "#000", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 2 },
+    android: { elevation: 1 },
+  }),
+  md: Platform.select({
+    web: { boxShadow: "0 2px 4px rgba(0, 0, 0, 0.08)" },
+    ios: { shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 4 },
+    android: { elevation: 2 },
+  }),
+  lg: Platform.select({
+    web: { boxShadow: "0 4px 8px rgba(0, 0, 0, 0.1)" },
+    ios: { shadowColor: "#000", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 8 },
+    android: { elevation: 4 },
+  }),
 } as const;

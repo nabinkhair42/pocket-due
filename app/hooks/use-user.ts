@@ -46,8 +46,6 @@ export const useUser = () => {
 
         if (result.success) {
           showToast("Account deleted", "success");
-          // Clearing auth state re-renders the app to the auth screen; callers
-          // must not also invoke a parent logout handler.
           await logout();
           return true;
         }

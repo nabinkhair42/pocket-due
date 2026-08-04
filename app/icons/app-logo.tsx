@@ -7,12 +7,6 @@ interface AppLogoProps {
   style?: StyleProp<ViewStyle>;
 }
 
-/**
- * Vector version of assets/splash.svg. Previously this rendered assets/icon.png
- * through <Image>, which is a single raster shared by the launcher icon, the
- * adaptive icon and the favicon — so it carried launcher padding and blurred
- * when scaled up on the welcome screen.
- */
 export const AppLogo: React.FC<AppLogoProps> = ({ size = 80, style }) => (
   <Svg width={size} height={size} viewBox="0 0 512 512" fill="none" style={style}>
     <Path

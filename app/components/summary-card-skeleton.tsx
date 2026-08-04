@@ -72,7 +72,6 @@ const styles = StyleSheet.create({
   container: {
     paddingTop: spacing.lg,
   },
-  // Mirrors the real summary card, which has no border.
   card: {
     borderRadius: radius.lg,
     padding: spacing.lg,
@@ -96,8 +95,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
   },
-  // The real card has a divider + payment count; without it the placeholder
-  // is shorter than the content and the list jumps on load.
   footer: {
     borderTopWidth: 1,
     paddingTop: spacing.md,

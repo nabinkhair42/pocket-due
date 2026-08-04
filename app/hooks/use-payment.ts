@@ -8,12 +8,6 @@ import {
 import { Payment } from "../types/models";
 import { offlinePayments } from "../lib/offline-payments";
 
-/**
- * Toggling can legitimately delete the payment (when it's marked complete), so
- * "no payment came back" is ambiguous unless success is reported separately.
- * Previously this returned `Payment | null` for both outcomes, which made the
- * caller's failure branch unreachable and showed a success toast on failure.
- */
 export type ToggleResult =
   | { ok: true; deleted: true }
   | { ok: true; deleted: false; payment: Payment }
@@ -26,7 +20,6 @@ export type MutationResult<T> =
 export const usePayment = () => {
   const [payments, setPayments] = useState<Payment[]>([]);
   const [loading, setLoading] = useState(false);
-  /** Non-null when the last load failed, so the UI can tell "empty" from "broken". */
   const [error, setError] = useState<string | null>(null);
   const [summaries, setSummaries] = useState<PaymentSummary[]>([]);
   const [summariesLoading, setSummariesLoading] = useState(false);
@@ -158,7 +151,6 @@ export const usePayment = () => {
       }
 
       if (result.data?.deleted) {
-        // Completed, so the server removed it from the active list.
         setPayments((prev) =>
           Array.isArray(prev)
             ? prev.filter((payment) => payment._id !== id)
@@ -229,10 +221,6 @@ export const usePayment = () => {
     }
   }, []);
 
-  /**
-   * Pre-bucketed once per payments change instead of re-filtering on every
-   * render of the consuming screen.
-   */
   const paymentsByType = useMemo(() => {
     const source = Array.isArray(payments) ? payments : [];
     return {

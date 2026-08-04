@@ -10,7 +10,7 @@ export interface ValidationRule {
   min?: number;
   max?: number;
   enum?: string[];
-  custom?: (value: any) => boolean;
+  custom?: (value: unknown) => boolean;
   message?: string;
 }
 
