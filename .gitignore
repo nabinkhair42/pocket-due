@@ -183,3 +183,5 @@ PocketDue/ios/*.mode2v3
 PocketDue/ios/*.perspectivev3
 PocketDue/ios/**/xcuserdata/
 PocketDue/ios/project.xcworkspace/xcuserdata/
+.vercel
+.env*
