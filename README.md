@@ -3,19 +3,18 @@
   <h1>PocketDue - Personal Finance Management App</h1>
 </div>
 
-**PocketDue** is a comprehensive personal finance management application designed to help you track your income, expenses, and financial goals with ease. Take control of your financial future with our intuitive and powerful finance tracking solution.
+**PocketDue** is a cross-platform payment tracker for keeping track of money you need to pay and receive. It keeps payment details available offline and synchronizes pending changes when the device reconnects.
 
 ## Features
 
-- **Income & Expense Tracking** - Monitor your cash flow with detailed categorization
-- **Visual Analytics** - Interactive charts and graphs for better financial insights
-- **Payment Management** - Track payments you need to make and receive
-- **Financial Summaries** - Get comprehensive overviews of your financial status
-- **Secure Data Storage** - Your financial data is protected with enterprise-grade security
-- **Cross-Platform Access** - Available on iOS, Android, and Web platforms
-- **Real-time Synchronization** - Access your data anywhere, anytime
-- **Financial Goals** - Set and achieve your financial objectives
-- **Report Generation** - Generate detailed financial reports for analysis
+- **Pay and Receive Tracking** - Record amounts, people, due dates, descriptions, and payment status
+- **Offline-First Payments** - Create and manage payments without a connection while changes remain visible on the device
+- **Automatic Reconciliation** - Synchronize queued changes after reconnecting without temporarily replacing local data
+- **Financial Summaries** - Review per-person totals, net balances, and individual payment details
+- **Cached Experiences** - Open payment lists and summaries immediately from local data while fresh data loads in the background
+- **Google and GitHub Sign-In** - Authenticate through OAuth without managing a separate password
+- **Live Connectivity Feedback** - See the app's offline state update immediately as network availability changes
+- **Cross-Platform Access** - Use PocketDue on Android, iOS, and the web
 
 ## Screenshots
 
@@ -25,11 +24,11 @@
 
 ### Key Features Showcase
 
-- **Clean and Intuitive Interface** - Modern design with easy navigation
-- **Payment Tracking** - Comprehensive payment management system
-- **Financial Summaries** - Detailed overview of your financial status
-- **Real-time Updates** - Instant synchronization across devices
-- **Visual Analytics** - Charts and graphs for better insights
+- **Focused Payment Lists** - Switch between payments to make and payments to receive
+- **Payment Status Actions** - Mark outgoing payments as paid and incoming payments as received
+- **Per-Person Summaries** - Understand total amounts and net balances at a glance
+- **Resilient Offline Use** - Continue working during connection changes without losing pending entries
+- **Light and Dark Themes** - Use the interface comfortably with the preferred appearance
 
 
 ## Author
