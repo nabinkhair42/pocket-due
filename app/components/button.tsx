@@ -150,6 +150,7 @@ export const Button = ({
       onPress={onPress}
       disabled={isDisabled}
       accessibilityRole="button"
+      accessibilityState={{ disabled: isDisabled, busy: loading }}
     >
       {renderContent()}
     </Pressable>

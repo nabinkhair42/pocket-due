@@ -274,7 +274,7 @@ export const AddPaymentDrawer: React.FC<AddPaymentDrawerProps> = ({
                   <TouchableOpacity
                     onPress={() => {
                       Keyboard.dismiss();
-                      setIsDropdownOpen(!isDropdownOpen);
+                      setIsDropdownOpen(true);
                     }}
                     style={styles.dropdownToggle}
                     hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
@@ -314,7 +314,6 @@ export const AddPaymentDrawer: React.FC<AddPaymentDrawerProps> = ({
                             placeholderTextColor={colors.textTertiary}
                             value={searchText}
                             onChangeText={setSearchText}
-                            autoFocus
                           />
                         </View>
 

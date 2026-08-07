@@ -47,7 +47,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
 }) => {
   const { theme, toggleTheme } = useTheme();
   const colors = getThemeColors(theme);
-  const { logout, user } = useAuth();
+  const { logout, loading: logoutLoading, user } = useAuth();
   const { deleteLoading, deleteAccount } = useUser();
   const [showEditProfile, setShowEditProfile] = useState(false);
   const [showDeleteAccount, setShowDeleteAccount] = useState(false);
@@ -95,7 +95,6 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
   }, [showDeleteAccount, showLogoutDrawer, showAboutDrawer, showHelpDrawer, showEditProfile, onBack]);
 
   const handleLogoutConfirm = async () => {
-    setShowLogoutDrawer(false);
     await logout();
   };
 
@@ -264,7 +263,9 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
       {/* Logout Drawer */}
       <Drawer
         visible={showLogoutDrawer}
-        onClose={() => setShowLogoutDrawer(false)}
+        onClose={() => {
+          if (!logoutLoading) setShowLogoutDrawer(false);
+        }}
         height={280}
       >
         <View style={styles.drawerContent}>
@@ -282,6 +283,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
             variant="danger"
             size="lg"
             fullWidth
+            loading={logoutLoading}
             icon={<LogOut size={18} color={colors.white} />}
           >
             Sign out

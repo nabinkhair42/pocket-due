@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { apiService } from "../lib/api";
 import {
   CreatePaymentRequest,
@@ -7,6 +7,7 @@ import {
 } from "../types/api";
 import { Payment } from "../types/models";
 import { offlinePayments } from "../lib/offline-payments";
+import { useNetwork } from "../contexts/network-context";
 
 export type ToggleResult =
   | { ok: true; deleted: true }
@@ -18,6 +19,8 @@ export type MutationResult<T> =
   | { ok: false; error?: string };
 
 export const usePayment = () => {
+  const { isOnline } = useNetwork();
+  const syncingRef = useRef(false);
   const [payments, setPayments] = useState<Payment[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -32,35 +35,44 @@ export const usePayment = () => {
   }, []);
 
   const syncPendingPayments = useCallback(async () => {
-    const synced = await offlinePayments.sync();
-    if (synced.payments.length) setPayments(synced.payments);
-    return synced;
-  }, []);
+    if (!isOnline || syncingRef.current) return null;
+
+    syncingRef.current = true;
+    try {
+      const synced = await offlinePayments.sync();
+      setPayments(synced.payments);
+      return synced;
+    } finally {
+      syncingRef.current = false;
+    }
+  }, [isOnline]);
 
   useEffect(() => {
-    applyCachedPayments();
-    syncPendingPayments();
+    void applyCachedPayments().then(() => syncPendingPayments());
+    if (!isOnline) return;
+
     const timer = setInterval(() => {
-      syncPendingPayments();
+      void syncPendingPayments();
     }, 15000);
     return () => clearInterval(timer);
-  }, [applyCachedPayments, syncPendingPayments]);
+  }, [applyCachedPayments, isOnline, syncPendingPayments]);
 
   const getPayments = useCallback(async (): Promise<
     MutationResult<Payment[]>
   > => {
-    setLoading(true);
+    const cached = await applyCachedPayments();
+    if (!cached.length) setLoading(true);
     try {
-      const cached = await applyCachedPayments();
       const result = await apiService.getPayments();
       if (result.success && result.data?.payments) {
         const paymentsArray = Array.isArray(result.data.payments)
           ? result.data.payments
           : [];
-        setPayments(paymentsArray);
-        await offlinePayments.savePayments(paymentsArray);
+        const merged = await offlinePayments.mergeServerPayments(paymentsArray);
+        setPayments(merged);
+        await offlinePayments.savePayments(merged);
         setError(null);
-        return { ok: true, data: paymentsArray };
+        return { ok: true, data: merged };
       }
       if (offlinePayments.isConnectivityError(result.error) && cached.length) {
         setError(null);
@@ -71,7 +83,7 @@ export const usePayment = () => {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [applyCachedPayments]);
 
   const createPayment = useCallback(
     async (data: CreatePaymentRequest): Promise<MutationResult<Payment>> => {
@@ -199,8 +211,17 @@ export const usePayment = () => {
   const getPaymentSummaries = useCallback(async (): Promise<
     MutationResult<PaymentSummary[]>
   > => {
-    setSummariesLoading(true);
+    const cached = await offlinePayments.loadPayments();
+    const localSummaries = offlinePayments.buildSummaries(cached);
+    setSummaries(localSummaries);
+    if (!localSummaries.length) setSummariesLoading(true);
+
     try {
+      if (!isOnline) {
+        setSummariesError(null);
+        return { ok: true, data: localSummaries };
+      }
+
       const result = await apiService.getPaymentSummaries();
       if (result.success && result.data?.summaries) {
         setSummaries(result.data.summaries);
@@ -208,8 +229,6 @@ export const usePayment = () => {
         return { ok: true, data: result.data.summaries };
       }
       if (offlinePayments.isConnectivityError(result.error)) {
-        const cached = await offlinePayments.loadPayments();
-        const localSummaries = offlinePayments.buildSummaries(cached);
         setSummaries(localSummaries);
         setSummariesError(null);
         return { ok: true, data: localSummaries };
@@ -219,7 +238,7 @@ export const usePayment = () => {
     } finally {
       setSummariesLoading(false);
     }
-  }, []);
+  }, [isOnline]);
 
   const paymentsByType = useMemo(() => {
     const source = Array.isArray(payments) ? payments : [];

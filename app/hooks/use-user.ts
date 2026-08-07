@@ -11,7 +11,7 @@ export const useUser = () => {
 
   // Edit Profile
   const updateProfile = useCallback(
-    async (data: { name: string; email: string }): Promise<boolean> => {
+    async (data: { name: string }): Promise<boolean> => {
       if (!data.name.trim()) {
         showToast("Enter your name", "error");
         return false;
@@ -62,7 +62,6 @@ export const useUser = () => {
   const getCurrentUserData = useCallback(() => {
     return {
       name: user?.name || "",
-      email: user?.email || "",
     };
   }, [user]);
 

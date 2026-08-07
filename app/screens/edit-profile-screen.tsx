@@ -11,7 +11,7 @@ import {
   Platform,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { ChevronLeft, User, Mail, Save } from "lucide-react-native";
+import { ChevronLeft, User, Save } from "lucide-react-native";
 import { useTheme } from "../contexts/ThemeContext";
 import { getThemeColors, spacing, radius, typography } from "../lib/theme";
 import { useUser } from "../hooks/use-user";
@@ -35,15 +35,14 @@ export const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
     setFormData(getCurrentUserData());
   }, [getCurrentUserData]);
 
-  const handleChange = (field: "name" | "email", value: string) => {
+  const handleChange = (value: string) => {
     isDirty.current = true;
-    setFormData((prev) => ({ ...prev, [field]: value }));
+    setFormData({ name: value });
   };
 
   const handleSave = async () => {
     const success = await updateProfile({
       name: formData.name,
-      email: formData.email,
     });
 
     if (success) {
@@ -89,7 +88,7 @@ export const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
             Personal Information
           </Text>
           <Text style={[styles.sectionHint, { color: colors.textTertiary }]}>
-            Update your display name. Your email is managed by your OAuth provider.
+            Update the name shown on your account.
           </Text>
         </View>
 
@@ -105,26 +104,8 @@ export const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
                 placeholder="Enter your full name"
                 placeholderTextColor={colors.textTertiary}
                 value={formData.name}
-                onChangeText={(text) => handleChange("name", text)}
+                onChangeText={handleChange}
                 autoCapitalize="words"
-              />
-            </View>
-          </View>
-
-          <View style={styles.inputGroup}>
-            <Text style={[styles.label, { color: colors.textPrimary }]}>
-              Email Address
-            </Text>
-            <View style={[styles.inputContainer, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-              <Mail size={18} color={colors.textTertiary} />
-              <TextInput
-                style={[styles.input, { color: colors.textPrimary }]}
-                placeholder="Enter your email"
-                placeholderTextColor={colors.textTertiary}
-                value={formData.email}
-                editable={false}
-                keyboardType="email-address"
-                autoCapitalize="none"
               />
             </View>
           </View>

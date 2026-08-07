@@ -16,8 +16,8 @@ import { PaymentCard } from "../components/payment-card";
 import { PaymentCardSkeleton } from "../components/payment-card-skeleton";
 import { Tabs } from "../components/tabs";
 import { useTheme } from "../contexts/ThemeContext";
+import { useNetwork } from "../contexts/network-context";
 import { useToast } from "../contexts/toast-context";
-import { useAuth } from "../hooks/use-auth";
 import { usePayment } from "../hooks/use-payment";
 import { apiService } from "../lib/api";
 import { getThemeColors, spacing, radius, typography, shadows } from "../lib/theme";
@@ -36,7 +36,7 @@ export const HomeScreen: React.FC = () => {
   const { theme } = useTheme();
   const colors = getThemeColors(theme);
   const { showToast } = useToast();
-  const { status: authStatus } = useAuth();
+  const { isOnline } = useNetwork();
   const {
     loading,
     error,
@@ -254,7 +254,7 @@ export const HomeScreen: React.FC = () => {
         </View>
       </View>
 
-      {authStatus === "offline" && (
+      {!isOnline && (
         <View style={[styles.offlineBanner, { backgroundColor: colors.warningLight }]}>
           <WifiOff size={16} color={colors.warning} />
           <Text style={[styles.offlineBannerText, { color: colors.warningDark }]}>

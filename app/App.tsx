@@ -3,6 +3,7 @@ import { ErrorBoundary } from "./components/error-boundary";
 import { AuthProvider, useAuth } from "./contexts/auth-context";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import { ToastProvider } from "./contexts/toast-context";
+import { NetworkProvider } from "./contexts/network-context";
 import { AuthScreen } from "./screens/auth-screen";
 import { HomeScreen } from "./screens/home-screen";
 
@@ -22,9 +23,11 @@ export default function App() {
       <SafeAreaProvider>
         <ThemeProvider>
           <AuthProvider>
-            <ToastProvider>
-              <AppContent />
-            </ToastProvider>
+            <NetworkProvider>
+              <ToastProvider>
+                <AppContent />
+              </ToastProvider>
+            </NetworkProvider>
           </AuthProvider>
         </ThemeProvider>
       </SafeAreaProvider>

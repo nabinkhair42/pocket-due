@@ -33,6 +33,57 @@ export const offlinePayments = {
 
   loadPayments: () => readJson<Payment[]>(PAYMENTS_KEY, []),
 
+  async mergeServerPayments(serverPayments: Payment[]): Promise<Payment[]> {
+    const cached = await this.loadPayments();
+    const queue = await readJson<QueuedOperation[]>(QUEUE_KEY, []);
+    const byId = new Map(serverPayments.map((payment) => [payment._id, payment]));
+    const replacements = new Map<string, Payment>();
+    const localCreates = new Map(
+      cached.filter((payment) => payment._id.startsWith("local-")).map((payment) => [payment._id, payment])
+    );
+
+    for (const operation of queue) {
+      if (operation.kind === "create") {
+        const local = localCreates.get(operation.localId);
+        const server = serverPayments.find(
+          (payment) => payment.clientRequestId === operation.data.clientRequestId
+        );
+        if (server) replacements.set(operation.localId, server);
+        else if (local && !byId.has(operation.localId)) byId.set(operation.localId, local);
+        continue;
+      }
+      const current = byId.get(operation.paymentId) || cached.find((payment) => payment._id === operation.paymentId);
+      if (!current) continue;
+      if (operation.kind === "delete") {
+        byId.delete(operation.paymentId);
+      } else if (operation.kind === "update") {
+        byId.set(operation.paymentId, {
+          ...current,
+          ...operation.data,
+          dueDate: operation.data.dueDate || current.dueDate,
+          updatedAt: new Date().toISOString(),
+        });
+      } else if (operation.kind === "toggle") {
+        const status = current.type === "to_pay"
+          ? current.status === "paid" ? "unpaid" : "paid"
+          : current.status === "received" ? "pending" : "received";
+        byId.set(operation.paymentId, { ...current, status, updatedAt: new Date().toISOString() });
+      }
+    }
+
+    const merged: Payment[] = [];
+    for (const payment of cached) {
+      const replacement = replacements.get(payment._id);
+      const current = replacement || byId.get(payment._id);
+      if (current) {
+        merged.push(current);
+        byId.delete(current._id);
+        byId.delete(payment._id);
+      }
+    }
+    return [...merged, ...byId.values()];
+  },
+
   savePayments: async (payments: Payment[]) => {
     await AsyncStorage.setItem(PAYMENTS_KEY, JSON.stringify(payments));
   },

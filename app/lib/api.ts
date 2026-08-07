@@ -112,7 +112,6 @@ class ApiService {
 
   async updateProfile(data: {
     name?: string;
-    email?: string;
   }): Promise<ApiResponse<UserResponse>> {
     const result = await authClient.updateUser(data);
     if (result.error) {
